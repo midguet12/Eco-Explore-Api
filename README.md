@@ -6,7 +6,7 @@ Eco Explore Api an exploration and travel Service
 
 You need install all requeriments for develop the api
 ### Requeriments 
-- Python >= 3.10 
+- Python >= 3.11 
 - Poetry 
 
 then copy the application.ini from the build.config folder into your `src` folder, and add all keys for develop.
