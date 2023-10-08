@@ -1,10 +1,9 @@
 [tool.poetry]
-name = "eco-explore-api"
+name = "eco_explore_api"
 version = "0.1.0"
 description = "Exo Explore Backend for Traveling App"
-authors = ["josephyv <haguilar@auronix.com>"]
-license = "MIT"
-readme = "README.md"
+authors = ["josephyv <josephynimoto@gmail.com>"]
+readme = "../README.md"
 packages = [{include = "eco_explore_api"}]
 
 [tool.poetry.dependencies]
@@ -12,7 +11,8 @@ python = "^3.11"
 fastapi = "^0.103.2"
 requests = "^2.31.0"
 firebase-admin = "^6.2.0"
-uvicorn = "^0.23.2"
+uvicorn = {extras = ["standard"], version = "^0.23.2"}
+poetry = "^1.6.1"
 
 
 [build-system]
