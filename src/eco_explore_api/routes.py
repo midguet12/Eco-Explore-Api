@@ -5,7 +5,7 @@ app = FastAPI()
 
 @app.get('/health')
 async def health():
-    return {'status': 'ok ya funciona con watchtower'}
+    return {'status': 'ok ya funciona con watchtower de manera automatica'}
 
 
 @app.get('/status')
