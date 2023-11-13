@@ -30,7 +30,7 @@ poetry shell
 2. Run the project using `uvicorn` this command will launch uvicorn inside poetry environment, this project already have Swagger installed for apy test, dont need another tool for test the API 
 
 ```bash 
-poetry run uvicorn eco-explore-api.routes:app --reload
+poetry run uvicorn eco_explore_api.routes:app --reload
 ```
 
 
