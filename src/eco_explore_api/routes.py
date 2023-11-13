@@ -8,7 +8,7 @@ import eco_explore_api.schemas.response_constants as rcodes
 app = FastAPI()
 
 
-@app.get("/health")
+@app.get("/health", response_model=HealthCheckResponse())
 async def health():
     response = HealthCheckResponse(message="Is Health")
     return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(response))
