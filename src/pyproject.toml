@@ -13,6 +13,11 @@ requests = "^2.31.0"
 firebase-admin = "^6.2.0"
 uvicorn = {extras = ["standard"], version = "^0.23.2"}
 poetry = "^1.6.1"
+pydantic = "^2.4.2"
+json5 = "^0.9.14"
+pymongo = "^4.6.0"
+python-dotenv = "^1.0.0"
+authlib = "^1.2.1"
 
 
 [build-system]
