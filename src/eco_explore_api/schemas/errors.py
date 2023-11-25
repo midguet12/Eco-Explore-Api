@@ -10,3 +10,4 @@ class Detail(BaseModel):
 class Error(BaseModel):
     error: str
     detail: List[Detail]
+

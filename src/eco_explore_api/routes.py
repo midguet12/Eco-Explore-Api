@@ -4,13 +4,14 @@ from fastapi.encoders import jsonable_encoder
 from datetime import datetime
 from eco_explore_api.schemas.responses import HealthCheckResponse, VersionResponse
 import eco_explore_api.schemas.response_constants as rcodes
+import eco_explore_api.config as cf
 
 app = FastAPI()
 
 
 @app.get("/health", response_model=HealthCheckResponse())
-async def health():
-    response = HealthCheckResponse(message="Is Health")
+async def health(saludo):
+    response = HealthCheckResponse(message="Hola {}".format(saludo))
     return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(response))
 
 

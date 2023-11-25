@@ -18,6 +18,8 @@ json5 = "^0.9.14"
 pymongo = "^4.6.0"
 python-dotenv = "^1.0.0"
 authlib = "^1.2.1"
+phonenumbers = "^8.13.26"
+pydantic-extra-types = "^2.1.0"
 
 
 [build-system]
