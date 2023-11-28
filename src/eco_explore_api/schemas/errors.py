@@ -3,11 +3,10 @@ from pydantic import BaseModel
 
 
 class Detail(BaseModel):
-    title: str | int
+    title: Optional(str | int)
     desc: int | str | List[str] | List[int]
 
 
 class Error(BaseModel):
     error: str
-    detail: List[Detail]
-
+    detail: Optional(List[Detail])
