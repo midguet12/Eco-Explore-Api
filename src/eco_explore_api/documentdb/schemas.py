@@ -33,7 +33,9 @@ class Usuarios(BaseModel):
 
 class Bitacora(BaseModel):
     Nombre: str
+    Publica: bool
     Descripcion: str
+    Activad: str
     Dificultad: int
     EquipoNecesario: Optional(List[EquipoNecesario])
     PuntosInteres: List[PuntosInteres()]
