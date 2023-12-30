@@ -1,6 +1,7 @@
 from datetime import datetime
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
+from eco_explore_api.documentdb.schemas import Bitacora
 from pydantic_extra_types.phone_numbers import PhoneNumber
 
 
@@ -61,3 +62,12 @@ class ExploracionesResponse(BaseModel):
 class StatusResponse(BaseModel):
     ok: bool
     detail: str
+
+
+class BestRoutesResponse(BaseModel):
+    Rutas: Optional[List[Bitacora]]
+
+
+class UserRoutesResponse(BaseModel):
+    Guadadas: Optional[BestRoutesResponse]
+    Publicas: Optional[BestRoutesResponse]

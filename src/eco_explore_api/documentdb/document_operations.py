@@ -1,6 +1,16 @@
+import bson
+from pymongo import ASCENDING
 import eco_explore_api.config as cf
+from eco_explore_api.schemas import errors
 import eco_explore_api.documentdb.schemas as schemas
+import eco_explore_api.constants.delimitations as limits
 from eco_explore_api.documentdb.document import Collections
+import eco_explore_api.constants.response_constants as rcodes
+from eco_explore_api.schemas.responses import BestRoutesResponse, UserRoutesResponse
+
+
+def serialice_id(uid: str):
+    return bson.ObjectId(uid)
 
 
 def create_user(Usuario: schemas.Usuarios):
@@ -10,3 +20,75 @@ def create_user(Usuario: schemas.Usuarios):
         ans = cls.insert_one(Usuario.model_dump())
         return ans.acknowledged
     return False
+
+
+def find_best_routes(acivity: str):
+    acivity = acivity.strip("").lower()
+    response = BestRoutesResponse(Rutas=[])
+    if acivity not in limits.ACTIVITIES:
+        return [
+            rcodes.BAD_REQUEST,
+            errors.Error(
+                error="Actividad no encontrada", detail=",".join(limits.ACTIVITIES)
+            ),
+        ]
+    cls = Collections().get_collection(cf.LOGBOOK_COLLECTION)
+    search_criteria = {"Actividad": acivity}
+    ans = list(cls.find(filter=search_criteria).sort("Puntuacion", ASCENDING).limit(7))
+    if len(ans):
+        for bitacora in ans:
+            try:
+                current = schemas.Bitacora(**bitacora)
+                response.Rutas.append(current)
+            except Exception as e:
+                return [
+                    rcodes.NOT_FOUND,
+                    errors.Error(error="Error al Obtener bitacoras", detail=str(e)),
+                ]
+            return [rcodes.ok, response]
+    else:
+        return [rcodes.NOT_FOUND, response]
+
+
+def exploration_details(user_id: str):
+    response = UserRoutesResponse(
+        Guadadas=BestRoutesResponse(Rutas=[]), Publicas=BestRoutesResponse(Rutas=[])
+    )
+    errorResponse = errors.Error(error="", detail=None)
+    user_searching = {"_id": ""}
+    try:
+        user_searching["_id"] = serialice_id(user_id)
+    except Exception as e:
+        errorResponse.error = "user id invalido"
+        errorResponse.detail = str(e)
+        return [rcodes.BAD_REQUEST, errorResponse]
+
+    cls = Collections().get_collection(cf.USERS_COLLECTION)
+    ans = cls.find_one(filter=user_searching)
+
+    if ans:
+        bitacoras = []
+        cls = Collections().get_collection(cf.LOGBOOK_COLLECTION)
+        for elements in ans["Bitacoras"]:
+            bit = cls.find_one(filter={"_id": elements})
+            if bit:
+                for id in bit["Comentarios"]:
+                    id = str(id)
+                try:
+                    bit.pop("_id", None)
+                    bitacoras.append(schemas.Bitacora(**bit))
+                except Exception as e:
+                    errorResponse.error = "Error al recuperar las bitacoras"
+                    errorResponse.detail = str(e)
+                    return [rcodes.CONFLICT, errorResponse]
+
+        for element in bitacoras:
+            if element.Publica:
+                response.Publicas.Rutas.append(element)
+            else:
+                response.Guadadas.Rutas.append(element)
+
+        return [rcodes.OK, response]
+    else:
+        errorResponse.error = "El usuario no existe"
+        return [rcodes.NOT_FOUND, errorResponse]

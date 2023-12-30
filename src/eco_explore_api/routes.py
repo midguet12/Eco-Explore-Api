@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from datetime import datetime
 from typing import List
+from eco_explore_api.constants import response_constants as rcodes
 from eco_explore_api.schemas.responses import (
     HealthCheckResponse,
     VersionResponse,
@@ -14,9 +15,10 @@ from eco_explore_api.schemas.responses import (
     BitacoraResponse,
     ExploracionesResponse,
     StatusResponse,
+    BestRoutesResponse,
+    UserRoutesResponse,
 )
 from eco_explore_api.schemas import (
-    response_constants as rcodes,
     errors,
 )
 import eco_explore_api.config as cf
@@ -92,6 +94,18 @@ async def get_exploraciones():
     return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(exploraciones))
 
 
+@app.get(
+    "/mejores/rutas/{activity}",
+    response_model=BestRoutesResponse,
+    tags=["Exploraciones"],
+)
+async def get_best_rotes(activity: str):
+    code, response = dc.find_best_routes(activity)
+    return JSONResponse(
+        status_code=code, content=jsonable_encoder(response.model_dump())
+    )
+
+
 @app.post(
     "/signin",
     response_model=StatusResponse,
@@ -117,3 +131,15 @@ async def sign_in(json_data: dict):
         return JSONResponse(
             status_code=rcodes.BAD_REQUEST, content=jsonable_encoder(error.model_dump())
         )
+
+
+@app.get(
+    "/exploration/details/{userid}",
+    response_model=UserRoutesResponse,
+    tags=["Usuarios"],
+)
+async def exploration_details(userid: str):
+    code, response = dc.exploration_details(userid)
+    return JSONResponse(
+        status_code=code, content=jsonable_encoder(response.model_dump())
+    )
