@@ -53,7 +53,7 @@ async def get_usuarios():
 
 
 @app.get(
-    "/puntos_interes/",
+    "/puntos_interes",
     response_model=List[PuntosInteresResponse],
     tags=["Puntos de Interés"],
 )
@@ -62,14 +62,14 @@ async def get_puntos_interes():
     return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(puntos_interes))
 
 
-@app.get("/resenas/", response_model=List[ResenaResponse], tags=["Reseñas"])
+@app.get("/resenas", response_model=List[ResenaResponse], tags=["Reseñas"])
 async def get_resenas():
     resenas = []
     return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(resenas))
 
 
 @app.get(
-    "/equipos_necesarios/",
+    "/equipos_necesarios",
     response_model=List[EquipoNecesarioResponse],
     tags=["Equipos Necesarios"],
 )
@@ -78,14 +78,14 @@ async def get_equipos_necesarios():
     return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(equipos))
 
 
-@app.get("/bitacoras/", response_model=List[BitacoraResponse], tags=["Bitácoras"])
+@app.get("/bitacoras", response_model=List[BitacoraResponse], tags=["Bitácoras"])
 async def get_bitacoras():
     bitacoras = []
     return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(bitacoras))
 
 
 @app.get(
-    "/exploraciones/",
+    "/exploraciones",
     response_model=List[ExploracionesResponse],
     tags=["Exploraciones"],
 )
@@ -134,9 +134,9 @@ async def sign_in(json_data: dict):
 
 
 @app.get(
-    "/exploration/details/{userid}",
+    "/exploraciones/detalles/{userid}",
     response_model=UserRoutesResponse,
-    tags=["Usuarios"],
+    tags=["Exploraciones"],
 )
 async def exploration_details(userid: str):
     code, response = dc.exploration_details(userid)
