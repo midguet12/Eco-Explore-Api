@@ -56,3 +56,8 @@ class ExploracionesResponse(BaseModel):
     Exploradores: List[UsuariosResponse]
     Ruta: BitacoraResponse
     Precio: float
+
+
+class StatusResponse(BaseModel):
+    ok: bool
+    detail: str

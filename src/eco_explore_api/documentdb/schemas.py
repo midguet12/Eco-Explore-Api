@@ -1,7 +1,8 @@
 from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, EmailStr
-from pydantic_extra_types import PhoneNumber
+from pydantic_mongo import ObjectIdField
+from pydantic_extra_types.phone_numbers import PhoneNumber
 
 
 class EquipoNecesario(BaseModel):
@@ -12,12 +13,23 @@ class EquipoNecesario(BaseModel):
 class PuntosInteres(BaseModel):
     Lon: float
     Lat: float
-    UrlMedia: Optional(List[str])
+    UrlMedia: Optional[List[str]]
 
 
 class Reseña(BaseModel):
     Evaluacion: int
     Comentario: str
+
+
+class Bitacora(BaseModel):
+    Nombre: str
+    Publica: bool
+    Descripcion: str
+    Activad: str
+    Dificultad: int
+    EquipoNecesario: Optional[List[EquipoNecesario]]
+    PuntosInteres: List[PuntosInteres]
+    Comentarios: Optional[List[ObjectIdField]]
 
 
 class Usuarios(BaseModel):
@@ -29,22 +41,12 @@ class Usuarios(BaseModel):
     PerfilPublico: bool
     Guia: bool
     Telefono: PhoneNumber
-
-
-class Bitacora(BaseModel):
-    Nombre: str
-    Publica: bool
-    Descripcion: str
-    Activad: str
-    Dificultad: int
-    EquipoNecesario: Optional(List[EquipoNecesario])
-    PuntosInteres: List[PuntosInteres()]
-    Comentarios: Optional(List[Reseña()])
+    Bitacoras: Optional[List[ObjectIdField]]
 
 
 class Exploraciones(BaseModel):
     FechaAgendata: datetime
-    Guia: Usuarios()
-    Exploradores: List[Usuarios()]
-    Ruta: Bitacora()
+    Guia: ObjectIdField
+    Exploradores: List[ObjectIdField]
+    Ruta: ObjectIdField
     Precio: float

@@ -1,3 +1,4 @@
+import json
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
@@ -12,9 +13,16 @@ from eco_explore_api.schemas.responses import (
     UsuariosResponse,
     BitacoraResponse,
     ExploracionesResponse,
+    StatusResponse,
 )
-import eco_explore_api.schemas.response_constants as rcodes
+from eco_explore_api.schemas import (
+    response_constants as rcodes,
+    errors,
+)
 import eco_explore_api.config as cf
+import eco_explore_api.documentdb.document_operations as dc
+import eco_explore_api.documentdb.schemas as sh
+from pydantic import ValidationError
 
 app = FastAPI()
 
@@ -82,3 +90,30 @@ async def get_bitacoras():
 async def get_exploraciones():
     exploraciones = []
     return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(exploraciones))
+
+
+@app.post(
+    "/signin",
+    response_model=StatusResponse,
+    tags=["Usuarios"],
+)
+async def sign_in(json_data: dict):
+    try:
+        # json_data = json.load(json_data)
+        contenido = sh.Usuarios(**json_data)
+        if dc.create_user(contenido):
+            respuesta = StatusResponse(ok=True, detail="usuario Creado")
+            return JSONResponse(
+                status_code=rcodes.OK, content=jsonable_encoder(respuesta.model_dump())
+            )
+        else:
+            res = StatusResponse(ok=False, detail="El usuario ya existe")
+            return JSONResponse(
+                status_code=rcodes.CONFLICT,
+                content=jsonable_encoder(res.model_dump()),
+            )
+    except ValidationError as exc:
+        error = errors.Error(error=str(exc.errors()[0]), detail=None)
+        return JSONResponse(
+            status_code=rcodes.BAD_REQUEST, content=jsonable_encoder(error.model_dump())
+        )

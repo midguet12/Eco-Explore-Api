@@ -20,6 +20,8 @@ python-dotenv = "^1.0.0"
 authlib = "^1.2.1"
 phonenumbers = "^8.13.26"
 pydantic-extra-types = "^2.1.0"
+email-validator = "^2.1.0.post1"
+pydantic-mongo = "^2.0.3"
 
 
 [build-system]
