@@ -45,7 +45,7 @@ class Usuarios(BaseModel):
 
 
 class Exploraciones(BaseModel):
-    FechaAgendata: datetime
+    FechaAgendada: datetime
     Guia: str
     Exploradores: List[str]
     Ruta: str

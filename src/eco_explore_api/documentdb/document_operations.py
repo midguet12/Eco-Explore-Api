@@ -6,11 +6,30 @@ import eco_explore_api.documentdb.schemas as schemas
 import eco_explore_api.constants.delimitations as limits
 from eco_explore_api.documentdb.document import Collections
 import eco_explore_api.constants.response_constants as rcodes
-from eco_explore_api.schemas.responses import BestRoutesResponse, UserRoutesResponse
+from eco_explore_api.schemas.responses import (
+    BestRoutesResponse,
+    UserRoutesResponse,
+    ExplorationScheduleResponse,
+)
 
 
 def serialice_id(uid: str):
     return bson.ObjectId(uid)
+
+
+def valid_user_id(user_id: str):
+    try:
+        user_id = serialice_id(user_id)
+        return True
+    except Exception:
+        return False
+
+
+def user_exist(user_id: str):
+    cls = Collections().get_collection(cf.USERS_COLLECTION)
+    usr_serach = {"_id": user_id}
+    ans = cls.find_one(filter=usr_serach)
+    return bool(ans)
 
 
 def create_user(Usuario: schemas.Usuarios):
@@ -55,18 +74,12 @@ def exploration_details(user_id: str):
         Guadadas=BestRoutesResponse(Rutas=[]), Publicas=BestRoutesResponse(Rutas=[])
     )
     errorResponse = errors.Error(error="", detail=None)
-    user_searching = {"_id": ""}
-    try:
-        user_searching["_id"] = serialice_id(user_id)
-    except Exception as e:
+    if not valid_user_id(user_id):
         errorResponse.error = "user id invalido"
-        errorResponse.detail = str(e)
         return [rcodes.BAD_REQUEST, errorResponse]
 
-    cls = Collections().get_collection(cf.USERS_COLLECTION)
-    ans = cls.find_one(filter=user_searching)
-
-    if ans:
+    user_id = serialice_id(user_id)
+    if user_exist(user_id):
         bitacoras = []
         cls = Collections().get_collection(cf.LOGBOOK_COLLECTION)
         for elements in ans["Bitacoras"]:
@@ -92,3 +105,14 @@ def exploration_details(user_id: str):
     else:
         errorResponse.error = "El usuario no existe"
         return [rcodes.NOT_FOUND, errorResponse]
+
+
+def exploration_schedule(user_id: str):
+    response = ExplorationScheduleResponse(Agenda=None)
+    errorResponse = errors.Error(error="", detail=None)
+    if not valid_user_id(user_id):
+        errorResponse.error = "user id invalido"
+        return [rcodes.BAD_REQUEST, errorResponse]
+    user_id = serialice_id(user_id)
+    if user_exist(user_id):
+        
