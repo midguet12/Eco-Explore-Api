@@ -31,7 +31,7 @@ from eco_explore_api.storage.google_storage import gstorage
 app = FastAPI()
 
 
-@app.get("/health", response_model=HealthCheckResponse())
+@app.get("/health", response_model=HealthCheckResponse)
 async def health(saludo):
     response = HealthCheckResponse(message="Adios {}".format(saludo))
     return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(response))
