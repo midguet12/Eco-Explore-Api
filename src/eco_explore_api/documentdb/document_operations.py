@@ -117,6 +117,4 @@ def exploration_schedule(user_id: str):
         errorResponse.error = "user id invalido"
         return [rcodes.BAD_REQUEST, errorResponse]
     user_id = serialice_id(user_id)
-
-
-#  if user_exist(user_id):
+    # if user_exist(user_id):
