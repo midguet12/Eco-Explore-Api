@@ -1,5 +1,6 @@
 import json
-from fastapi import FastAPI
+from typing import Annotated
+from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from datetime import datetime
@@ -25,6 +26,7 @@ import eco_explore_api.config as cf
 import eco_explore_api.documentdb.document_operations as dc
 import eco_explore_api.documentdb.schemas as sh
 from pydantic import ValidationError
+from eco_explore_api.storage.google_storage import gstorage
 
 app = FastAPI()
 
@@ -143,3 +145,21 @@ async def exploration_details(userid: str):
     return JSONResponse(
         status_code=code, content=jsonable_encoder(response.model_dump())
     )
+
+
+@app.post(
+    "/bitacoras/subir/{id}",
+    tags=["bitacoras"],
+)
+async def upload_to(id: str, file: UploadFile):
+    storage = gstorage()
+    try:
+        response = await storage.upload_single_file(file)
+        print(response)
+        return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(response))
+    except Exception as e:
+        error = errors.Error(error="No fue posible subir el archivo", detail=str(e))
+        return JSONResponse(
+            status_code=rcodes.BAD_REQUEST,
+            content=jsonable_encoder(error.model_dump()),
+        )
