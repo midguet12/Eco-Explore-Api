@@ -115,3 +115,51 @@ def exploration_schedule(user_id: str):
         return [rcodes.BAD_REQUEST, errorResponse]
     user_id = serialice_id(user_id)
     # if user_exist(user_id):
+
+
+
+def get_routes(route:str):
+ 
+    cls = Collections().get_collection(cf.LOGBOOK_COLLECTION)   
+    
+    query = {"Nombre": {"$regex": f".*{route}.*"}}
+    routes = cls.find(query)
+    route_objects = [schemas.Bitacora(**route) for route in routes]
+    
+    if route_objects:
+        return route_objects
+    else:
+        return None
+
+def get_ExplorationUser(user_id: str):
+    cls = Collections().get_collection(cf.USERS_COLLECTION)
+    user_id = serialice_id(user_id)
+    usr_search = {"_id": user_id}
+    ans = cls.find_one(filter=usr_search)
+
+    if ans:
+        bitacoras_collection = Collections().get_collection(cf.LOGBOOK_COLLECTION)
+        exploraciones_collection = Collections().get_collection(cf.EXPLORATION_COLLECTION)
+
+        if hasattr(ans, "Bitacoras") and ans["Bitacoras"]:
+            bitacoras_counts = bitacoras_collection.count_public_bitacoras(ans)
+            active_bitacoras_count, total_bitacoras_count = bitacoras_counts
+        else:
+            active_bitacoras_count = 0
+            total_bitacoras_count = 0
+
+        explorations_count = exploraciones_collection.count_documents(
+            {"Exploradores": {"$in": [ans["_id"]]}}
+        )
+
+        return {
+            "active_bitacoras_count": active_bitacoras_count,
+            "total_bitacoras_count": total_bitacoras_count,
+            "explorations_count": explorations_count
+        }
+
+    return {
+        "active_bitacoras_count": 0,
+        "total_bitacoras_count": 0,
+        "explorations_count": 0
+    }
