@@ -4,6 +4,8 @@ from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from datetime import datetime
 from typing import List
+from fastapi import HTTPException
+from pydantic import BaseModel
 from eco_explore_api.schemas.responses import (
     HealthCheckResponse,
     VersionResponse,
@@ -117,3 +119,63 @@ async def sign_in(json_data: dict):
         return JSONResponse(
             status_code=rcodes.BAD_REQUEST, content=jsonable_encoder(error.model_dump())
         )
+
+@app.get(
+    "/get_route",
+    response_model=StatusResponse,
+    tags=["Rutas"],
+)
+async def get_route(json_data: dict):
+    try:
+        contenido = sh.Bitacora(**json_data)
+        route_object = dc.get_route(contenido)
+
+        if route_object:
+            respuesta = StatusResponse(ok=True, detail="Ruta encontrada")
+            return JSONResponse(
+                status_code=rcodes.OK,
+                content=jsonable_encoder(respuesta.model_dump()),
+            )
+        else:
+            res = StatusResponse(ok=False, detail="Ruta no encontrada")
+            return JSONResponse(
+                status_code=rcodes.NOT_FOUND,
+                content=jsonable_encoder(res.model_dump()),
+            )
+    except ValidationError as exc:
+        error = errors.Error(error=str(exc.errors()[0]), detail=None)
+        return JSONResponse(
+            status_code=rcodes.BAD_REQUEST,
+            content=jsonable_encoder(error.model_dump()),
+        )
+    
+
+class ExplorationUserResponse(BaseModel):
+    active_bitacoras_count: int
+    total_bitacoras_count: int
+    explorations_count: int
+
+
+@app.get(
+    "/get_explorations_user",
+    response_model=ExplorationUserResponse,
+    tags=["Usuarios"],
+)
+async def get_explorations_user(json_data: dict):
+    try:
+        contenido = sh.Usuarios(**json_data)
+        active_bitacoras_count, total_bitacoras_count, explorations_count = dc.get_ExplorationUser(contenido)
+
+        return ExplorationUserResponse(
+            active_bitacoras_count=active_bitacoras_count,
+            total_bitacoras_count=total_bitacoras_count,
+            explorations_count=explorations_count,
+        )
+
+    except ValidationError as exc:
+        error = {"detail": str(exc.errors()[0])}
+        raise HTTPException(status_code=rcodes.BAD_REQUEST, detail=error)
+
+    except Exception as e:
+        error = {"detail": str(e)}
+        raise HTTPException(status_code=rcodes.INTERNAL_SERVER_ERROR, detail=error)
