@@ -79,6 +79,9 @@ def exploration_details(user_id: str):
         return [rcodes.BAD_REQUEST, errorResponse]
 
     user_id = serialice_id(user_id)
+    cls = Collections().get_collection(cf.USERS_COLLECTION)
+    usr_serach = {"_id": user_id}
+    ans = cls.find_one(filter=usr_serach)
     if user_exist(user_id):
         bitacoras = []
         cls = Collections().get_collection(cf.LOGBOOK_COLLECTION)
@@ -114,5 +117,6 @@ def exploration_schedule(user_id: str):
         errorResponse.error = "user id invalido"
         return [rcodes.BAD_REQUEST, errorResponse]
     user_id = serialice_id(user_id)
-    if user_exist(user_id):
-        
+
+
+#  if user_exist(user_id):
