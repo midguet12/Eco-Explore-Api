@@ -136,6 +136,7 @@ def update_user(user_id: str, updated_user: schemas.Usuarios):
 
 def add_review_to_bitacora(bitacora_id: str, user_id: str, resena: schemas.Rese√±a):
     cls = Collections().get_collection(cf.LOGBOOK_COLLECTION)
+    col = Collections().get_collection(cf.COMENTARY_COLLECTION)
 
     bitacora_id = serialice_id(bitacora_id)
 
@@ -143,7 +144,7 @@ def add_review_to_bitacora(bitacora_id: str, user_id: str, resena: schemas.Rese√
 
     if user_exist(user_id):
         try:
-            resena_id = cls.insert_one(resena.model_dump()).inserted_id
+            resena_id = col.insert_one(resena.model_dump()).inserted_id
 
             cls.update_one({"_id": bitacora_id}, {"$push": {"Comentarios": resena_id}})
 
