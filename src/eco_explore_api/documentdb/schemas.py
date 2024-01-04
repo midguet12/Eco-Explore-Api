@@ -12,7 +12,7 @@ class EquipoNecesario(BaseModel):
 class PuntosInteres(BaseModel):
     Lon: float
     Lat: float
-    UrlMedia: Optional[List[str]]
+    UrlMedia: Optional[str]
 
 
 class Reseña(BaseModel):
@@ -24,8 +24,8 @@ class Bitacora(BaseModel):
     Nombre: str
     Publica: bool
     Descripcion: str
-    Activad: str
-    Dificultad: int
+    Actividad: str
+    Dificultad: str
     EquipoNecesario: Optional[List[EquipoNecesario]]
     PuntosInteres: List[PuntosInteres]
     Comentarios: Optional[List[str]]

@@ -1,1 +1,2 @@
-ACTIVITIES = ["caminata", "ciclismo", "montañismo", "escalada", "rapel", "cañonismo"]
+ACTIVITIES = ["Caminata", "Ciclismo", "Montañismo", "Escalada", "Rapel", "Cañonismo"]
+DIFICULTIES = ["Fácil", "Moderado", "Difícil"]

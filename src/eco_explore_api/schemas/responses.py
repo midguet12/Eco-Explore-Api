@@ -1,8 +1,14 @@
 from datetime import datetime
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
-from eco_explore_api.documentdb import schemas as dbschemas
+from fastapi import UploadFile
+from eco_explore_api.schemas import models
 from pydantic_extra_types.phone_numbers import PhoneNumber
+
+
+class RequestFiles(BaseModel):
+    body: dict
+    object: UploadFile
 
 
 class HealthCheckResponse(BaseModel):
@@ -52,20 +58,20 @@ class BitacoraResponse(BaseModel):
 
 
 class ExploracionesResponse(BaseModel):
-    FechaAgendata: datetime
-    Guia: UsuariosResponse
-    Exploradores: List[UsuariosResponse]
-    Ruta: BitacoraResponse
-    Precio: float
+    Agenda: Optional[List[models.ExploracionesModel]]
 
 
 class StatusResponse(BaseModel):
     ok: bool
-    detail: str
+    detail: Optional[str]
+
+
+class CreatedObjectResponse(StatusResponse):
+    id: Optional[str]
 
 
 class BestRoutesResponse(BaseModel):
-    Rutas: Optional[List[dbschemas.Bitacora]]
+    Rutas: Optional[List[models.BitacoraModel]]
 
 
 class UserRoutesResponse(BaseModel):
@@ -73,5 +79,10 @@ class UserRoutesResponse(BaseModel):
     Publicas: Optional[BestRoutesResponse]
 
 
-class ExplorationScheduleResponse(BaseModel):
-    Agenda: Optional[List[dbschemas.Exploraciones]]
+class GoogleStorageResponse(BaseModel):
+    bucket: str
+    blob_path: str
+    file_name: str
+    file_path: str
+    file_size: str
+    content_type: str
