@@ -21,12 +21,6 @@ def get_comentary(comentary_ids: dict):
             ans = cliente.get_comentary(id)
             if ans:
                 response.Comentarios.append(ans)
-            else:
-                errorResponse.error = (
-                    "Ocurrio un error al recuperar el comentario {}".format(id)
-                )
-                return [rcodes.NOT_FOUND, errorResponse]
-
         return [rcodes.OK, response]
     except Exception as e:
         errorResponse.error = "No se pudieron recuperar los comentarios"
