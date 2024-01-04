@@ -1,6 +1,4 @@
-import json
-from typing import Annotated
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from datetime import datetime
@@ -18,10 +16,9 @@ from eco_explore_api.schemas.responses import (
     StatusResponse,
     BestRoutesResponse,
     UserRoutesResponse,
+    CreatedObjectResponse,
 )
-from eco_explore_api.schemas import (
-    errors,
-)
+from eco_explore_api.schemas import errors, models
 import eco_explore_api.config as cf
 import eco_explore_api.documentdb.document_operations as dc
 import eco_explore_api.documentdb.schemas as sh
@@ -55,7 +52,7 @@ async def get_usuarios():
 
 
 @app.get(
-    "/puntos_interes",
+    "/puntos/interes",
     response_model=List[PuntosInteresResponse],
     tags=["Puntos de Interés"],
 )
@@ -71,7 +68,7 @@ async def get_resenas():
 
 
 @app.get(
-    "/equipos_necesarios",
+    "/equipos/necesarios",
     response_model=List[EquipoNecesarioResponse],
     tags=["Equipos Necesarios"],
 )
@@ -80,20 +77,51 @@ async def get_equipos_necesarios():
     return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(equipos))
 
 
-@app.get("/bitacoras", response_model=List[BitacoraResponse], tags=["Bitácoras"])
-async def get_bitacoras():
-    bitacoras = []
-    return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(bitacoras))
+@app.get(
+    "/bitacora/{bitacora_id}", response_model=models.BitacoraModel, tags=["Bitácoras"]
+)
+async def get_bitacoras(bitacora_id: str):
+    code, response = dc.get_logbook(bitacora_id)
+    return JSONResponse(
+        status_code=code, content=jsonable_encoder(response.model_dump())
+    )
+
+
+@app.post(
+    "/bitacoras/crear/{user_id}",
+    response_model=CreatedObjectResponse,
+    tags=["Bitácoras"],
+)
+async def create_bitacora(user_id: str, body: dict):
+    code, response = dc.create_logbook(user_id, body)
+    return JSONResponse(
+        status_code=code, content=jsonable_encoder(response.model_dump())
+    )
+
+
+@app.post(
+    "/bitacoras/agregar/{user_id}/{bitacora_id}",
+    response_model=StatusResponse,
+    tags=["Bitácoras"],
+)
+async def add_pov(user_id: str, bitacora_id: str, object: dict, file: UploadFile):
+    print(object)
+    code, response = await dc.add_point_to_logbook(user_id, bitacora_id, object, file)
+    return JSONResponse(
+        status_code=code, content=jsonable_encoder(response.model_dump())
+    )
 
 
 @app.get(
-    "/exploraciones",
-    response_model=List[ExploracionesResponse],
+    "/exploraciones/{user_id}",
+    response_model=ExploracionesResponse,
     tags=["Exploraciones"],
 )
-async def get_exploraciones():
-    exploraciones = []
-    return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(exploraciones))
+async def get_exploraciones(user_id: str):
+    code, response = dc.exploration_schedule(user_id)
+    return JSONResponse(
+        status_code=code, content=jsonable_encoder(response.model_dump())
+    )
 
 
 @app.get(
