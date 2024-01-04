@@ -306,4 +306,34 @@ async def add_point_to_logbook(
         return [rcodes.CONFLICT, error]
 
 
-# def grand_explorator_mode(user_id:str):
+def grand_explorator_mode(user_id: str):
+    errorResponse = errors.Error(error="", detail=None)
+    if not valid_user_id(user_id):
+        errorResponse.error = "El id del usuario es invalido"
+        return [rcodes.BAD_REQUEST, errorResponse]
+
+    user_id = serialice_id(user_id)
+    if not user_exist(user_id):
+        errorResponse.error = "No se actualizo el estatus"
+        errorResponse.detail = "El usuario no existe"
+        return [rcodes.NOT_FOUND, errorResponse]
+    
+    
+    try:
+        cls = Collections().get_collection(cf.USERS_COLLECTION)
+        search = {"_id": user_id}
+        update_params = {"$set": {"Guia": True}}
+        ans = cls.update_one(filter=search, update=update_params, upsert=False)
+        if ans:
+            return [
+                rcodes.CREATED,
+                StatusResponse(ok=True, detail="El usuario ahora es un Guia"),
+            ]
+        else:
+            errorResponse.error = "No se actualizo el estatus"
+            errorResponse.detail = "El usuario no existe"
+            return [rcodes.NOT_FOUND, errorResponse]
+    except Exception as e:
+        errorResponse.error = "ocurrio un error al actualizar el estado"
+        errorResponse.detail = str(e)
+        return [rcodes.CONFLICT, errorResponse]

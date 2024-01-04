@@ -53,6 +53,30 @@ async def get_usuarios():
 
 
 @app.get(
+    "/usuarios/{user_id}/autor/bitacora/{bitacora_id}",
+    response_model=StatusResponse,
+    tags=["Usuarios"],
+)
+async def get_pertenencia(user_id: str, bitacora_id: str):
+    code, response = dc.its_user_logbook(user_id, bitacora_id)
+    return JSONResponse(
+        status_code=code, content=jsonable_encoder(response.model_dump())
+    )
+
+
+@app.put(
+    "/usuarios/hacer/guia",
+    response_model=StatusResponse,
+    tags=["Usuarios"],
+)
+async def make_guide(user_id: str):
+    code, repsonse = dc.grand_explorator_mode(user_id)
+    return JSONResponse(
+        status_code=code, content=jsonable_encoder(repsonse.model_dump())
+    )
+
+
+@app.get(
     "/puntos/interes",
     response_model=List[PuntosInteresResponse],
     tags=["Puntos de Interés"],
