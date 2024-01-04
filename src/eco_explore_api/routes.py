@@ -187,3 +187,24 @@ async def upload_to(id: str, file: UploadFile):
             status_code=rcodes.BAD_REQUEST,
             content=jsonable_encoder(error.model_dump()),
         )
+
+
+@app.post(
+    "/bitacoras/{bitacora_id}/add_review/{user_id}",
+    response_model=ResenaResponse,
+    tags=["Bitácoras"],
+)
+async def add_review_to_bitacora(
+    bitacora_id: str, user_id: str, comentario: str, puntuacion: int
+):
+    try:
+        resena = sh.Reseña(Evaluacion=puntuacion, Comentario=comentario)
+        code, response = dc.add_review_to_bitacora(bitacora_id, user_id, resena)
+        return JSONResponse(
+            status_code=code, content=jsonable_encoder(response.model_dump())
+        )
+    except ValidationError as exc:
+        error = errors.Error(error=str(exc.errors()[0]), detail=None)
+        return JSONResponse(
+            status_code=rcodes.BAD_REQUEST, content=jsonable_encoder(error.model_dump())
+        )

@@ -10,6 +10,7 @@ from eco_explore_api.schemas.responses import (
     BestRoutesResponse,
     UserRoutesResponse,
     ExplorationScheduleResponse,
+    ResenaResponse,
 )
 
 
@@ -131,3 +132,29 @@ def update_user(user_id: str, updated_user: schemas.Usuarios):
             return False
     else:
         return False
+
+
+def add_review_to_bitacora(bitacora_id: str, user_id: str, resena: schemas.Reseña):
+    cls = Collections().get_collection(cf.LOGBOOK_COLLECTION)
+
+    bitacora_id = serialice_id(bitacora_id)
+
+    user_id = serialice_id(user_id)
+
+    if user_exist(user_id):
+        try:
+            resena_id = cls.insert_one(resena.model_dump()).inserted_id
+
+            cls.update_one({"_id": bitacora_id}, {"$push": {"Comentarios": resena_id}})
+
+            respuesta = ResenaResponse(
+                Evaluacion=resena.Evaluacion, Comentario=resena.Comentario
+            )
+            return rcodes.OK, respuesta
+        except Exception as e:
+            print(f"Error al agregar reseña a la bitácora: {e}")
+            errorResponse = errors.Error(error="Error al agregar reseña", detail=str(e))
+            return rcodes.INTERNAL_SERVER_ERROR, errorResponse
+    else:
+        errorResponse = errors.Error(error="El usuario no existe", detail=None)
+        return rcodes.NOT_FOUND, errorResponse
