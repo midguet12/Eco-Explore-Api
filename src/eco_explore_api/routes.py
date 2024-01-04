@@ -18,6 +18,7 @@ from eco_explore_api.schemas.responses import (
     BestRoutesResponse,
     UserRoutesResponse,
     CreatedObjectResponse,
+    ComentaryResponse,
 )
 from eco_explore_api.schemas import errors, models
 import eco_explore_api.config as cf
@@ -25,6 +26,7 @@ import eco_explore_api.documentdb.document_operations as dc
 import eco_explore_api.documentdb.schemas as sh
 from pydantic import ValidationError
 from eco_explore_api.storage.google_storage import gstorage
+import eco_explore_api.grcp.proto_operations as eco_grpc
 
 app = FastAPI()
 
@@ -121,6 +123,18 @@ async def create_bitacora(user_id: str, body: dict):
     code, response = dc.create_logbook(user_id, body)
     return JSONResponse(
         status_code=code, content=jsonable_encoder(response.model_dump())
+    )
+
+
+@app.post(
+    "/bitacoras/comentarios",
+    response_model=ComentaryResponse,
+    tags=["Bitácoras"],
+)
+async def get_comentary_per_logbook(objec: dict):
+    codes, response = eco_grpc.get_comentary(objec)
+    return JSONResponse(
+        status_code=codes, content=jsonable_encoder(response.model_dump())
     )
 
 

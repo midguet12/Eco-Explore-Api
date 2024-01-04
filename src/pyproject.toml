@@ -25,6 +25,9 @@ pydantic-mongo = "^2.0.3"
 google-cloud-storage = "^2.14.0"
 python-multipart = "^0.0.6"
 fast-api-gcs = "^0.0.11"
+grpcio = "^1.60.0"
+grpcio-tools = "^1.60.0"
+protobuf = "^4.25.1"
 
 
 [build-system]
