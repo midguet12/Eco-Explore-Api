@@ -3,6 +3,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from fastapi import UploadFile
 from eco_explore_api.schemas import models
+from eco_explore_api.documentdb.schemas import Reseña
 from pydantic_extra_types.phone_numbers import PhoneNumber
 
 
@@ -86,3 +87,7 @@ class GoogleStorageResponse(BaseModel):
     file_path: str
     file_size: str
     content_type: str
+
+
+class ComentaryResponse(BaseModel):
+    Comentarios: Optional[List[Reseña]]
