@@ -294,7 +294,10 @@ async def add_point_to_logbook(
         update_rule = {"$push": {"PuntosInteres": element.model_dump()}}
         ans = cls.update_one(filter=search, update=update_rule, upsert=False)
         if ans:
-            result = StatusResponse(ok=True, detail="Punto Agregado")
+            result = StatusResponse(
+                ok=True,
+                detail="Punto Agregado con foto en {}".format(response.file_path),
+            )
             return [rcodes.ACEPTED, result]
         else:
             error = errors.Error(error="No se pudo agregar el punto", detail=None)
@@ -317,8 +320,7 @@ def grand_explorator_mode(user_id: str):
         errorResponse.error = "No se actualizo el estatus"
         errorResponse.detail = "El usuario no existe"
         return [rcodes.NOT_FOUND, errorResponse]
-    
-    
+
     try:
         cls = Collections().get_collection(cf.USERS_COLLECTION)
         search = {"_id": user_id}
