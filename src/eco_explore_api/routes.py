@@ -54,6 +54,30 @@ async def get_usuarios():
     return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(usuarios))
 
 
+@app.put("/usuarios/{user_id}", response_model=StatusResponse, tags=["Usuarios"])
+async def update_user(user_id: str, json_data: dict):
+    try:
+        contenido = sh.Usuarios(**json_data)
+        if dc.update_user(user_id, contenido):
+            respuesta = StatusResponse(
+                ok=True, detail="Datos de usuario actualizados correctamente"
+            )
+            return JSONResponse(
+                status_code=rcodes.OK, content=jsonable_encoder(respuesta.model_dump())
+            )
+        else:
+            res = StatusResponse(ok=False, detail="No se pudo actualizar el usuario")
+            return JSONResponse(
+                status_code=rcodes.NOT_FOUND,  # Podrías cambiar el código de estado según tu necesidad
+                content=jsonable_encoder(res.model_dump()),
+            )
+    except ValidationError as exc:
+        error = errors.Error(error=str(exc.errors()[0]), detail=None)
+        return JSONResponse(
+            status_code=rcodes.BAD_REQUEST, content=jsonable_encoder(error.model_dump())
+        )
+
+
 @app.get(
     "/puntos_interes",
     response_model=List[PuntosInteresResponse],

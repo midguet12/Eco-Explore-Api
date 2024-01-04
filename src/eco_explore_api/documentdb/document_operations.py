@@ -115,3 +115,19 @@ def exploration_schedule(user_id: str):
         return [rcodes.BAD_REQUEST, errorResponse]
     user_id = serialice_id(user_id)
     # if user_exist(user_id):
+
+
+def update_user(user_id: str, updated_user: schemas.Usuarios):
+    cls = Collections().get_collection(cf.USERS_COLLECTION)
+
+    user_id = serialice_id(user_id)
+
+    if user_exist(user_id):
+        try:
+            cls.update_one({"_id": user_id}, {"$set": updated_user.model_dump()})
+            return True
+        except Exception as e:
+            print(f"Error al actualizar usuario: {e}")
+            return False
+    else:
+        return False
