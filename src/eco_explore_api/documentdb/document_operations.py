@@ -17,7 +17,7 @@ from eco_explore_api.schemas.responses import (
     StatusResponse,
     GoogleStorageResponse,
 )
-from eco_explore_api.storage import google_storage as gstorage
+from eco_explore_api.storage.google_storage import gstorage
 
 
 def serialice_id(uid: str):
@@ -37,6 +37,7 @@ def transform_id_object(obj: dict):
         curr = obj[element]
         if isinstance(curr, list):
             curr = [str(x) for x in curr if bson.ObjectId.is_valid(x)]
+            obj[element] = curr
         elif bson.ObjectId.is_valid(curr):
             obj[element] = str(curr)
     return obj
@@ -48,7 +49,6 @@ def user_exist(user_id: bson.ObjectId):
     cls = Collections().get_collection(cf.USERS_COLLECTION)
     usr_serach = {"_id": user_id}
     ans = cls.find_one(filter=usr_serach)
-    print(ans)
     return bool(ans)
 
 
@@ -97,7 +97,6 @@ def find_best_routes(acivity: str):
     search_criteria = {"Actividad": acivity}
     ans = list(cls.find(filter=search_criteria).sort("Puntuacion", DESCENDING).limit(7))
     if len(ans):
-        print(ans)
         for bitacora in ans:
             try:
                 element = transform_id_object(bitacora)
@@ -266,7 +265,6 @@ def its_user_logbook(user_id: str, bitacore_id):
 async def add_point_to_logbook(
     user_id: str, bitacora_id: str, object: dict, image: UploadFile
 ):
-    print(object)
     errorResponse = errors.Error(error="", detail="")
     if not valid_user_id(user_id):
         errorResponse.error = "El id del usuario es invalido"
@@ -279,8 +277,6 @@ async def add_point_to_logbook(
     if codes == rcodes.NOT_FOUND:
         errorResponse.error = "La bitacora no pertenece al usuario"
         return [rcodes.UNAUTHORIZED, errorResponse]
-
-    object = dict(object)
 
     if ("Lon" not in object) or ("Lat" not in object):
         errorResponse.error = "Objeto Invalido"
@@ -295,7 +291,7 @@ async def add_point_to_logbook(
         cls = Collections().get_collection(cf.LOGBOOK_COLLECTION)
         search = {"_id": serialice_id(bitacora_id)}
         element.UrlMedia = response.file_path
-        update_rule = {"$push": {"EquipoNecesario": element.model_dump()}}
+        update_rule = {"$push": {"PuntosInteres": element.model_dump()}}
         ans = cls.update_one(filter=search, update=update_rule, upsert=False)
         if ans:
             result = StatusResponse(ok=True, detail="Punto Agregado")

@@ -1,9 +1,14 @@
 from datetime import datetime
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
-
+from fastapi import UploadFile
 from eco_explore_api.schemas import models
 from pydantic_extra_types.phone_numbers import PhoneNumber
+
+
+class RequestFiles(BaseModel):
+    body: dict
+    object: UploadFile
 
 
 class HealthCheckResponse(BaseModel):

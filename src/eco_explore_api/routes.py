@@ -1,8 +1,9 @@
-from fastapi import FastAPI, UploadFile
+import json
+from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from datetime import datetime
-from typing import List
+from typing import List, Annotated
 from eco_explore_api.constants import response_constants as rcodes
 from eco_explore_api.schemas.responses import (
     HealthCheckResponse,
@@ -99,14 +100,30 @@ async def create_bitacora(user_id: str, body: dict):
     )
 
 
-@app.post(
-    "/bitacoras/agregar/{user_id}/{bitacora_id}",
+@app.put(
+    "/bitacoras/agregar",
     response_model=StatusResponse,
     tags=["Bitácoras"],
 )
-async def add_pov(user_id: str, bitacora_id: str, object: dict, file: UploadFile):
-    print(object)
-    code, response = await dc.add_point_to_logbook(user_id, bitacora_id, object, file)
+async def add_pov(
+    user_id: str,
+    bitacora_id: str,
+    coordinates: Annotated[str, Form()],
+    file: Annotated[UploadFile, File()],
+):
+    try:
+        coordinates = json.loads(coordinates)
+    except Exception as e:
+        return JSONResponse(
+            status_code=rcodes.BAD_REQUEST,
+            content=jsonable_encoder(
+                errors.Error(error="Data invalida", detail=str(e))
+            ),
+        )
+
+    code, response = await dc.add_point_to_logbook(
+        user_id, bitacora_id, coordinates, file
+    )
     return JSONResponse(
         status_code=code, content=jsonable_encoder(response.model_dump())
     )
@@ -183,7 +200,6 @@ async def upload_to(id: str, file: UploadFile):
     storage = gstorage()
     try:
         response = await storage.upload_single_file(file)
-        print(response)
         return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(response))
     except Exception as e:
         error = errors.Error(error="No fue posible subir el archivo", detail=str(e))
@@ -191,3 +207,20 @@ async def upload_to(id: str, file: UploadFile):
             status_code=rcodes.BAD_REQUEST,
             content=jsonable_encoder(error.model_dump()),
         )
+
+
+@app.post("/files/{id1}/{id2}")
+async def create_file(
+    # file: Annotated[bytes, File()],
+    id1: str,
+    id2: str,
+    fileb: Annotated[UploadFile, File()],
+    token: Annotated[str, dict],
+):
+    token = json.loads(token)
+    return {
+        "id1": id1,
+        "id2": id2,
+        "token": token,
+        "fileb_content_type": fileb.content_type,
+    }
