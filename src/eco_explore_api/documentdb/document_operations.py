@@ -148,6 +148,19 @@ def add_review_to_bitacora(bitacora_id: str, user_id: str, resena: schemas.Rese√
 
             cls.update_one({"_id": bitacora_id}, {"$push": {"Comentarios": resena_id}})
 
+            bitacora = cls.find_one({"_id": bitacora_id})
+            comentarios_ids = bitacora.get("Comentarios", [])
+
+            puntuaciones = []
+            for comentario_id in comentarios_ids:
+                comentario = col.find_one({"_id": comentario_id})
+                puntuaciones.append(comentario.get("Evaluacion", 0))
+
+            if puntuaciones:
+                promedio = round(sum(puntuaciones) / len(puntuaciones), 1)
+
+                cls.update_one({"_id": bitacora_id}, {"$set": {"Puntuacion": promedio}})
+
             respuesta = ResenaResponse(
                 Evaluacion=resena.Evaluacion, Comentario=resena.Comentario
             )
