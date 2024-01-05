@@ -293,6 +293,29 @@ async def create_file(
     }
 
 
+@app.post("/exploraciones/crear/{user_id}",
+           response_model=CreatedObjectResponse, 
+           tags=["Exploraciones"])
+async def create_exploration(user_id: str, bitacora_id: str, object: dict):
+        code, response =  dc.create_exploration(user_id, bitacora_id, object)
+
+        return JSONResponse(status_code=code, content=jsonable_encoder(response.model_dump()))
+    
+@app.delete("/exploraciones/crear/{exploracion_id})",
+            response_model=CreatedObjectResponse,
+            tags=["Exploraciones"] )
+async def delete_exploration(exploration_id:str):
+    code, response = dc.delete_exploration(exploration_id)
+    return JSONResponse(status_code=code, content=jsonable_encoder(response.model_dump())) 
+
+@app.put("/exploraciones/borrar/{exploracion_id}",
+    response_model = CreatedObjectResponse,
+    tags = ["Exploraciones"] )
+async def Update_exploration(exploration_id:str, object: dict):
+    code,response = dc.update_exploration(exploration_id,object) 
+    return JSONResponse(status_code=code, content=jsonable_encoder(response.model_dump()))
+
+
 @app.get(
     "/rutas/obtener",
     response_model=BestRoutesResponse,
@@ -303,3 +326,4 @@ async def get_route(search: str):
     return JSONResponse(
         status_code=code, content=jsonable_encoder(route_objects.model_dump())
     )
+
