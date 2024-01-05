@@ -20,6 +20,6 @@ ejemplo = Usuarios(
     Bitacoras=[],
 )
 
-print(ejemplo.model_dump())
+print(USERS_COLLECTION)
 
 # print(ejemplo.model_dump())

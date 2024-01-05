@@ -17,7 +17,7 @@ def get_comentary(comentary_ids: dict):
     try:
         response = ComentaryResponse(Comentarios=[])
         cliente = GrpcServer()
-        for id in user_data.Comentarios_id:
+        for id in user_data.Comentarios:
             ans = cliente.get_comentary(id)
             if ans:
                 response.Comentarios.append(ans)
