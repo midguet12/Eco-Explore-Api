@@ -28,33 +28,11 @@ import eco_explore_api.documentdb.schemas as sh
 from pydantic import ValidationError
 from eco_explore_api.storage.google_storage import gstorage
 import eco_explore_api.grcp.proto_operations as eco_grpc
-from jose import JWTError, jwt
 import eco_explore_api.auth.models as auth_models
-import eco_explore_api.auth.auth_database as auth_database
 import eco_explore_api.auth.auth_operations as auth_operations
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 app = FastAPI()
-
-
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-    credentials_exception = HTTPException(
-        status_code=rcodes.UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, cf.SECRET_KEY_AUTH, algorithms=[cf.AUTH_ALGORITH])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-        token_data = auth_models.TokenData(username=username)
-    except JWTError:
-        raise credentials_exception
-    user = auth_database.get_user(username=token_data.username)
-    if user is None:
-        raise credentials_exception
-    return user
 
 
 @app.post("/token", response_model=auth_models.Token)
@@ -84,7 +62,7 @@ async def health(saludo):
 
 
 @app.get("/status")
-async def statue():
+async def statue(token: dict = Depends(auth_operations.oauth2_scheme)):
     time = datetime.now()
     return JSONResponse(
         status_code=rcodes.OK,
@@ -105,7 +83,9 @@ async def get_usuarios():
     response_model=StatusResponse,
     tags=["Usuarios"],
 )
-async def update_user(user_id: str, json_data: dict):
+async def update_user(
+    user_id: str, json_data: dict, token: dict = Depends(auth_operations.oauth2_scheme)
+):
     code, response = dc.update_user(user_id, json_data)
     return JSONResponse(
         status_code=code, content=jsonable_encoder(response.model_dump())
@@ -287,11 +267,22 @@ async def sign_in(json_data: dict):
     response_model=UserRoutesResponse,
     tags=["Bitácoras"],
 )
-async def exploration_details(userid: str, current_user: Annotated[User, Depends(get_current_user)] ):
-    code, response = dc.exploration_details(userid)
-    return JSONResponse(
-        status_code=code, content=jsonable_encoder(response.model_dump())
-    )
+async def exploration_details(
+    userid: str, token: Annotated[str, Depends(auth_operations.oauth2_scheme)]
+):
+    if await auth_operations.check_if_user_is_auth(userid, token):
+        code, response = dc.exploration_details(userid)
+        return JSONResponse(
+            status_code=code, content=jsonable_encoder(response.model_dump())
+        )
+    else:
+        errorResponse = errors.Error(
+            error="No tienes permiso para realizar esta accion", detail=None
+        )
+        return JSONResponse(
+            status_code=rcodes.UNAUTHORIZED,
+            content=jsonable_encoder(errorResponse.model_dump()),
+        )
 
 
 @app.post(

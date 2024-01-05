@@ -12,7 +12,7 @@ def get_user(email: str):
         if ans:
             ans = transform_id_object(ans)
             print(ans)
-            return schemas.Usuarios(**transform_id_object(ans))
+            return schemas.UsuariosModelAuth(**transform_id_object(ans))
         else:
             return None
     except Exception as e:

@@ -45,6 +45,10 @@ class Usuarios(BaseModel):
     Bitacoras: Optional[List[str]]
 
 
+class UsuariosModelAuth(Usuarios):
+    id: Optional[str] = Field(alias="_id")
+
+
 class Exploraciones(BaseModel):
     FechaAgendada: datetime
     Guia: str
