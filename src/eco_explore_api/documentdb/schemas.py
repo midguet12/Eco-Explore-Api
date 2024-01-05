@@ -32,6 +32,14 @@ class Bitacora(BaseModel):
     Puntuacion: float
 
 
+class ModBitacora(BaseModel):
+    Nombre: str
+    Publica: bool
+    Descripcion: str
+    Actividad: str
+    Dificultad: str
+
+
 class Usuarios(BaseModel):
     Nombre: str
     ApellidoPaterno: str

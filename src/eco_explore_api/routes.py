@@ -142,6 +142,18 @@ async def create_bitacora(user_id: str, body: dict):
     )
 
 
+@app.put(
+    "/bitacoras/modificar/{bitacora_id}",
+    response_model=StatusResponse,
+    tags=["Bitácoras"],
+)
+async def modify_bitacora(bitacora_id: str, body: dict):
+    code, response = dc.modify_logbook(bitacora_id, body)
+    return JSONResponse(
+        status_code=code, content=jsonable_encoder(response.model_dump())
+    )
+
+
 @app.post(
     "/bitacoras/comentarios",
     response_model=ComentaryResponse,

@@ -244,6 +244,60 @@ def create_logbook(user_id: str, object: dict):
         return [rcodes.CONFLICT, errorResponse]
 
 
+def modify_logbook(bitacora_id: str, object: dict):
+    print(bitacora_id)
+    response = StatusResponse(ok=True, detail="Bitácora modificada exitosamente")
+    errorResponse = errors.Error(error="", detail=None)
+
+    bitacora_id = serialice_id(bitacora_id)
+    # Check if bitacora_id is valid
+    if not valid_user_id(
+        bitacora_id
+    ):  # Asumiendo que tengas una función similar a valid_user_id para las bitácoras
+        errorResponse.error = "El id de la bitácora es invalido"
+        return [rcodes.BAD_REQUEST, errorResponse]
+
+    try:
+        schemas.ModBitacora.model_validate(object)
+    except Exception as e:
+        errorResponse.error = "El Objeto no es valido"
+        errorResponse.detail = str(e)
+        return [rcodes.BAD_REQUEST, errorResponse]
+
+    element = schemas.ModBitacora(**object)
+    element.Actividad = element.Actividad.lower().capitalize()
+    element.Dificultad = element.Dificultad.lower().capitalize()
+
+    if element.Actividad not in limits.ACTIVITIES:
+        errorResponse.error = "Actividad Invalida"
+        errorResponse.detail = ",".join(limits.ACTIVITIES)
+        return [rcodes.BAD_REQUEST, errorResponse]
+
+    if element.Dificultad not in limits.DIFICULTIES:
+        errorResponse.error = "Dificultad Invalida"
+        errorResponse.detail = ",".join(limits.DIFICULTIES)
+        return [rcodes.BAD_REQUEST, errorResponse]
+
+    try:
+        cls = Collections().get_collection(cf.LOGBOOK_COLLECTION)
+        print(element.model_dump())
+        ans = cls.update_one({"_id": bitacora_id}, {"$set": element.model_dump()})
+        # updated_data = {"$set": element.model_dump()}
+        # ans = cls.update_one({"_id": bitacora_id}, updated_data)
+
+        if ans.modified_count == 0:
+            return [
+                rcodes.NOT_FOUND,
+                StatusResponse(ok=False, detail="Bitácora no encontrada"),
+            ]
+
+        return [rcodes.OK, response]
+    except Exception as e:
+        errorResponse.error = "Error al modificar la bitácora"
+        errorResponse.detail = str(e)
+        return [rcodes.CONFLICT, errorResponse]
+
+
 def its_user_logbook(user_id: str, bitacore_id):
     errorResponse = errors.Error(error="", detail=None)
     if not valid_user_id(user_id) or not valid_user_id(bitacore_id):
@@ -406,7 +460,7 @@ def add_review_to_bitacora(bitacora_id: str, user_id: str, object: dict):
                         {"_id": bitacora_id}, {"$set": {"Puntuacion": promedio}}
                     )
 
-                respuesta = StatusResponse(ok=True, detail="Rereña agregada")
+                respuesta = StatusResponse(ok=True, detail="Reseña agregada")
                 return [rcodes.CREATED, respuesta]
             except Exception as e:
                 errorResponse = errors.Error(
