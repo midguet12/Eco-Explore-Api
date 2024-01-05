@@ -9,6 +9,7 @@ class BitacoraModel(models.Bitacora):
 
 class UsuariosModel(models.Usuarios):
     id: Optional[str] = Field(alias="_id")
+    # exclude = ["Clave"]
 
 
 class ExploracionesModel(models.Exploraciones):

@@ -1,5 +1,7 @@
 import json
-from fastapi import FastAPI, File, Form, UploadFile
+from datetime import datetime, timedelta
+from fastapi import FastAPI, File, Form, UploadFile, HTTPException, Depends
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from datetime import datetime
@@ -26,8 +28,53 @@ import eco_explore_api.documentdb.schemas as sh
 from pydantic import ValidationError
 from eco_explore_api.storage.google_storage import gstorage
 import eco_explore_api.grcp.proto_operations as eco_grpc
+from jose import JWTError, jwt
+import eco_explore_api.auth.models as auth_models
+import eco_explore_api.auth.auth_database as auth_database
+import eco_explore_api.auth.auth_operations as auth_operations
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 app = FastAPI()
+
+
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+    credentials_exception = HTTPException(
+        status_code=rcodes.UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, cf.SECRET_KEY_AUTH, algorithms=[cf.AUTH_ALGORITH])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        token_data = auth_models.TokenData(username=username)
+    except JWTError:
+        raise credentials_exception
+    user = auth_database.get_user(username=token_data.username)
+    if user is None:
+        raise credentials_exception
+    return user
+
+
+@app.post("/token", response_model=auth_models.Token)
+async def login_for_access_token(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+):
+    user = auth_operations.authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=rcodes.UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(
+        minutes=auth_operations.ACCESS_TOKEN_EXPIRE_MINUTES
+    )
+    access_token = auth_operations.create_access_token(
+        data={"sub": user.Email}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 @app.get("/health", response_model=HealthCheckResponse)
@@ -240,7 +287,7 @@ async def sign_in(json_data: dict):
     response_model=UserRoutesResponse,
     tags=["Bitácoras"],
 )
-async def exploration_details(userid: str):
+async def exploration_details(userid: str, current_user: Annotated[User, Depends(get_current_user)] ):
     code, response = dc.exploration_details(userid)
     return JSONResponse(
         status_code=code, content=jsonable_encoder(response.model_dump())

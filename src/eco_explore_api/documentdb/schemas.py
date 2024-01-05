@@ -1,6 +1,6 @@
 from datetime import datetime
-from typing import List, Optional
-from pydantic import BaseModel, EmailStr
+from typing import List, Optional, Annotated
+from pydantic import BaseModel, EmailStr, Field
 from pydantic_extra_types.phone_numbers import PhoneNumber
 
 
@@ -36,6 +36,7 @@ class Usuarios(BaseModel):
     Nombre: str
     ApellidoPaterno: str
     ApellidoMaterno: str
+    Clave: Annotated[str, Field(exclude=True)]
     Email: EmailStr
     UrlImagen: str
     PerfilPublico: bool
