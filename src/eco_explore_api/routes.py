@@ -17,6 +17,7 @@ from eco_explore_api.schemas.responses import (
     UserRoutesResponse,
     CreatedObjectResponse,
     ComentaryResponse,
+    UsersResponse,
 )
 from eco_explore_api.schemas import errors, models
 import eco_explore_api.config as cf
@@ -214,6 +215,21 @@ async def get_exploraciones(user_id: str):
 )
 async def get_best_rotes(activity: str):
     code, response = dc.find_best_routes(activity)
+    return JSONResponse(
+        status_code=code, content=jsonable_encoder(response.model_dump())
+    )
+
+
+@app.get(
+    "/usuarios/search/{email}",
+    response_model=UsersResponse,
+    tags=["Usuarios"],
+)
+async def search_users_by_email(email: str):
+    """
+    Endpoint to search a list of users that match with the email
+    """
+    code, response = dc.find_users_by_email(email)
     return JSONResponse(
         status_code=code, content=jsonable_encoder(response.model_dump())
     )

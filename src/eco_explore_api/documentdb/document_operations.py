@@ -1,5 +1,6 @@
 import bson
 from fastapi import UploadFile
+from pydantic import EmailStr
 import bson.json_util as json_util
 from pymongo import DESCENDING
 import eco_explore_api.config as cf
@@ -16,6 +17,7 @@ from eco_explore_api.schemas.responses import (
     CreatedObjectResponse,
     StatusResponse,
     GoogleStorageResponse,
+    UsersResponse,
 )
 from eco_explore_api.storage.google_storage import gstorage
 
@@ -109,6 +111,27 @@ def find_best_routes(acivity: str):
                 element = transform_id_object(bitacora)
                 current = models.BitacoraModel(**element)
                 response.Rutas.append(current)
+            except Exception as e:
+                return [
+                    rcodes.NOT_FOUND,
+                    errors.Error(error="Error al Obtener bitacoras", detail=str(e)),
+                ]
+        return [rcodes.OK, response]
+    else:
+        return [rcodes.NOT_FOUND, response]
+
+
+def find_users_by_email(email: str):
+    response = UsersResponse(Usuarios=[])
+    cls = Collections().get_collection(cf.USERS_COLLECTION)
+    search_criteria = {"Email": email}
+    ans = list(cls.find(filter=search_criteria))
+    if len(ans):
+        for usuario in ans:
+            try:
+                element = transform_id_object(usuario)
+                current = models.UsuariosModel(**element)
+                response.Usuarios.append(current)
             except Exception as e:
                 return [
                     rcodes.NOT_FOUND,
