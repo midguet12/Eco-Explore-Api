@@ -68,6 +68,7 @@ class UsersResponse(BaseModel):
 class UserRoutesResponse(BaseModel):
     Guadadas: Optional[BestRoutesResponse]
     Publicas: Optional[BestRoutesResponse]
+    # Agendadas: Optional[ExploracionesResponse]
 
 
 class GoogleStorageResponse(BaseModel):
@@ -81,3 +82,9 @@ class GoogleStorageResponse(BaseModel):
 
 class ComentaryResponse(BaseModel):
     Comentarios: Optional[List[Reseña]]
+
+
+class ExplorationUserResponse(BaseModel):
+    active_bitacoras_count: int
+    total_bitacoras_count: int
+    explorations_count: int
