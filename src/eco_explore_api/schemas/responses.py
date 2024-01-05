@@ -61,6 +61,10 @@ class BestRoutesResponse(BaseModel):
     Rutas: Optional[List[models.BitacoraModel]]
 
 
+class UsersResponse(BaseModel):
+    Usuarios: Optional[List[models.UsuariosModel]]
+
+
 class UserRoutesResponse(BaseModel):
     Guadadas: Optional[BestRoutesResponse]
     Publicas: Optional[BestRoutesResponse]

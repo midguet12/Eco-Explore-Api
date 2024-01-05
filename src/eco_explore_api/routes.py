@@ -19,6 +19,7 @@ from eco_explore_api.schemas.responses import (
     UserRoutesResponse,
     CreatedObjectResponse,
     ComentaryResponse,
+    UsersResponse,
     ExplorationUserResponse,
 )
 from eco_explore_api.schemas import errors, models
@@ -230,6 +231,32 @@ async def create_bitacora(
         )
 
 
+@app.put(
+    "/bitacoras/modificar/{bitacora_id}/{user_id}",
+    response_model=StatusResponse,
+    tags=["Bitácoras"],
+)
+async def modify_bitacora(
+    bitacora_id: str,
+    user_id: str,
+    body: dict,
+    token: Annotated[str, Depends(auth_operations.oauth2_scheme)],
+):
+    if await auth_operations.check_if_user_is_auth(user_id, token):
+        code, response = dc.modify_logbook(bitacora_id, body)
+        return JSONResponse(
+            status_code=code, content=jsonable_encoder(response.model_dump())
+        )
+    else:
+        errorResponse = errors.Error(
+            error="No tienes permiso para realizar esta accion", detail=None
+        )
+        return JSONResponse(
+            status_code=rcodes.UNAUTHORIZED,
+            content=jsonable_encoder(errorResponse.model_dump()),
+        )
+
+
 @app.post(
     "/bitacoras/comentarios",
     response_model=ComentaryResponse,
@@ -312,6 +339,21 @@ async def get_exploraciones(
 )
 async def get_best_rotes(activity: str):
     code, response = dc.find_best_routes(activity)
+    return JSONResponse(
+        status_code=code, content=jsonable_encoder(response.model_dump())
+    )
+
+
+@app.get(
+    "/usuarios/search/{email}",
+    response_model=UsersResponse,
+    tags=["Usuarios"],
+)
+async def search_users_by_email(email: str):
+    """
+    Endpoint to search a list of users that match with the email
+    """
+    code, response = dc.find_users_by_email(email)
     return JSONResponse(
         status_code=code, content=jsonable_encoder(response.model_dump())
     )
@@ -427,27 +469,61 @@ async def create_file(
     }
 
 
-@app.post("/exploraciones/crear/{user_id}",
-           response_model=CreatedObjectResponse, 
-           tags=["Exploraciones"])
-async def create_exploration(user_id: str, bitacora_id: str, object: dict):
-        code, response =  dc.create_exploration(user_id, bitacora_id, object)
+@app.post(
+    "/exploraciones/crear/{user_id}",
+    response_model=CreatedObjectResponse,
+    tags=["Exploraciones"],
+)
+async def create_exploration(
+    user_id: str,
+    bitacora_id: str,
+    object: dict,
+    token: Annotated[str, Depends(auth_operations.oauth2_scheme)],
+):
+    if await auth_operations.check_if_user_is_auth(user_id, token):
+        code, response = dc.create_exploration(user_id, bitacora_id, object)
+        return JSONResponse(
+            status_code=code, content=jsonable_encoder(response.model_dump())
+        )
+    else:
+        errorResponse = errors.Error(
+            error="No tienes permiso para realizar esta accion", detail=None
+        )
+        return JSONResponse(
+            status_code=rcodes.UNAUTHORIZED,
+            content=jsonable_encoder(errorResponse.model_dump()),
+        )
 
-        return JSONResponse(status_code=code, content=jsonable_encoder(response.model_dump()))
-    
-@app.delete("/exploraciones/crear/{exploracion_id})",
-            response_model=CreatedObjectResponse,
-            tags=["Exploraciones"] )
-async def delete_exploration(exploration_id:str):
+
+@app.delete(
+    "/exploraciones/eliminar/{exploracion_id})",
+    response_model=CreatedObjectResponse,
+    tags=["Exploraciones"],
+)
+async def delete_exploration(
+    exploration_id: str,
+    token: Annotated[str, Depends(auth_operations.oauth2_scheme)],
+):
     code, response = dc.delete_exploration(exploration_id)
-    return JSONResponse(status_code=code, content=jsonable_encoder(response.model_dump())) 
+    return JSONResponse(
+        status_code=code, content=jsonable_encoder(response.model_dump())
+    )
 
-@app.put("/exploraciones/borrar/{exploracion_id}",
-    response_model = CreatedObjectResponse,
-    tags = ["Exploraciones"] )
-async def Update_exploration(exploration_id:str, object: dict):
-    code,response = dc.update_exploration(exploration_id,object) 
-    return JSONResponse(status_code=code, content=jsonable_encoder(response.model_dump()))
+
+@app.put(
+    "/exploraciones/modificar/{exploracion_id}",
+    response_model=CreatedObjectResponse,
+    tags=["Exploraciones"],
+)
+async def Update_exploration(
+    exploration_id: str,
+    object: dict,
+    token: Annotated[str, Depends(auth_operations.oauth2_scheme)],
+):
+    code, response = dc.update_exploration(exploration_id, object)
+    return JSONResponse(
+        status_code=code, content=jsonable_encoder(response.model_dump())
+    )
 
 
 @app.get(
@@ -460,4 +536,3 @@ async def get_route(search: str):
     return JSONResponse(
         status_code=code, content=jsonable_encoder(route_objects.model_dump())
     )
-
