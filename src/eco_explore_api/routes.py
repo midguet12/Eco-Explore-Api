@@ -262,3 +262,54 @@ async def create_file(
         "token": token,
         "fileb_content_type": fileb.content_type,
     }
+
+
+
+@app.get(
+    "/get_route",
+    response_model=list[sh.Bitacora],  
+    tags=["Rutas"],
+)
+async def get_route(route: str):
+    try:
+        route_objects = dc.get_routes(route)
+
+        if route_objects:
+            return route_objects
+        else:
+            raise HTTPException(status_code=rcodes.NOT_FOUND, detail="No hay coincidencias")
+    except ValidationError as exc:
+
+        error = errors.Error(error=str(exc.errors()[0]), detail=None)
+        return JSONResponse(
+            status_code=rcodes.BAD_REQUEST,
+            content=jsonable_encoder(error.model_dump()),
+        )
+
+    
+
+class ExplorationUserResponse(BaseModel):
+    active_bitacoras_count: int
+    total_bitacoras_count: int
+    explorations_count: int
+
+
+@app.get(
+    "/get_explorations_user",
+    response_model=ExplorationUserResponse,
+    tags=["Usuarios"],
+)
+async def get_explorations_user(
+    id: str
+):
+    try:
+        result = dc.get_ExplorationUser(id)
+        return ExplorationUserResponse(**result)
+    
+    except ValidationError as exc:
+        error = {"detail": str(exc.errors()[0])}
+        raise HTTPException(status_code=rcodes.BAD_REQUEST, detail=error)
+
+    except Exception as e:
+        error = {"detail": str(e)}
+        raise HTTPException(status_code=rcodes.NOT_ACEPTABLE, detail=error)
