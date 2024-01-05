@@ -53,10 +53,17 @@ async def get_usuarios():
     return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(usuarios))
 
 
-@app.put("/usuarios/{user_id}", response_model=StatusResponse, tags=["Usuarios"])
+@app.put(
+    "/usuarios/{user_id}/actualizar/perfil",
+    response_model=StatusResponse,
+    tags=["Usuarios"],
+)
 async def update_user(user_id: str, json_data: dict):
     code, response = dc.update_user(user_id, json_data)
-    return JSONResponse(status_code=code, content=jsonable_encoder(response.model_dump()))
+    return JSONResponse(
+        status_code=code, content=jsonable_encoder(response.model_dump())
+    )
+
 
 @app.get(
     "/usuarios/{user_id}/autor/bitacora/{bitacora_id}",
@@ -65,6 +72,18 @@ async def update_user(user_id: str, json_data: dict):
 )
 async def get_pertenencia(user_id: str, bitacora_id: str):
     code, response = dc.its_user_logbook(user_id, bitacora_id)
+    return JSONResponse(
+        status_code=code, content=jsonable_encoder(response.model_dump())
+    )
+
+
+@app.post(
+    "/usuarios/{user_id}/actualizar/foto",
+    response_model=StatusResponse,
+    tags=["Usuarios"],
+)
+async def update_profile_photo(user_id: str, file: UploadFile):
+    code, response = await dc.update_profile_photo(user_id, file)
     return JSONResponse(
         status_code=code, content=jsonable_encoder(response.model_dump())
     )
