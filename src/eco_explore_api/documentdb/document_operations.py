@@ -31,6 +31,13 @@ def valid_user_id(user_id: str):
     except Exception:
         return False
 
+def valid_exploration_id(exploration_id: str):
+    try:
+        exploration_id = serialice_id(exploration_id)
+        return True
+    except Exception:
+        return False
+
 
 def transform_id_object(obj: dict):
     for element in obj:
@@ -54,6 +61,14 @@ def user_exist(user_id: bson.ObjectId):
     cls = Collections().get_collection(cf.USERS_COLLECTION)
     usr_serach = {"_id": user_id}
     ans = cls.find_one(filter=usr_serach)
+    return bool(ans)
+
+def exploration_exist(exploration_id: bson.ObjectId):
+    if isinstance(exploration_id, str):
+        exploration_id = serialice_id(exploration_id)
+    cls = Collections().get_collection(cf.EXPLORATION_COLLECTION)
+    exploration_search = {"_id": exploration_id}
+    ans = cls.find_one(filter=exploration_search)
     return bool(ans)
 
 
@@ -420,3 +435,128 @@ def add_review_to_bitacora(bitacora_id: str, user_id: str, object: dict):
         errorResponse.error = "Ocurrio un error interno"
         errorResponse.detail = str(e)
         return [rcodes.CONFLICT, errorResponse]
+
+
+
+def create_exploration(user_id: str, id_bitacora: str, object: dict):
+    response = CreatedObjectResponse(detail=None, id=None, ok=True)
+    errorResponse = errors.Error(error="", detail=None)
+
+    codes, _ = its_user_logbook(user_id, id_bitacora)
+    if codes == rcodes.NOT_FOUND:
+        errorResponse.error = "La bitacora no pertenece al usuario"
+        return [rcodes.UNAUTHORIZED, errorResponse]
+
+    if not valid_user_id(user_id):
+        errorResponse.error = "El id del usuario es inválido"
+        return [rcodes.BAD_REQUEST, errorResponse]
+
+    user_id = serialice_id(user_id)
+    
+    if not user_exist(user_id):
+        errorResponse.error = "El usuario no existe"
+        return [rcodes.NOT_FOUND, errorResponse]
+
+    try:
+        schemas.Exploraciones.model_validate(object)
+    except Exception as e:
+        errorResponse.error = "El objeto no es válido"
+        errorResponse.detail = str(e)
+        return [rcodes.BAD_REQUEST, errorResponse]
+
+    element = schemas.Exploraciones(**object)
+
+    try:
+        cls = Collections().get_collection(cf.EXPLORATION_COLLECTION)
+
+        ans = cls.insert_one(element.model_dump())
+
+        if ans and ans.inserted_id:
+            response.detail = "Exploración creada"
+            response.id = str(ans.inserted_id)
+            return [rcodes.CREATED, response]
+        else:
+            errorResponse.error = "La exploración no fue creada"
+            return [rcodes.FORBIDDEN, errorResponse]
+    except Exception as e:
+        errorResponse.error = "La exploración no fue creada"
+        errorResponse.detail = str(e)
+        return [rcodes.CONFLICT, errorResponse]
+
+
+def delete_exploration(exploracion_id: str):
+    response = CreatedObjectResponse(detail=None, id=None, ok=True)
+    errorResponse = errors.Error(error="", detail=None)
+
+    
+    if not valid_exploration_id(exploracion_id):
+        errorResponse.error = "ID de exploración no válido"
+        return [rcodes.BAD_REQUEST, errorResponse]
+    
+    exploracion_id = serialice_id(exploracion_id)
+
+    if not exploration_exist(exploracion_id):
+        errorResponse.error = "La exploración no existe"
+        return [rcodes.NOT_FOUND, errorResponse]
+
+    try:
+        cls = Collections().get_collection(cf.EXPLORATION_COLLECTION)
+        exploracion = cls.find_one({"_id": exploracion_id})
+    except KeyError:
+        errorResponse.error = "Error al acceder a la colección de exploraciones"
+        return [rcodes.CONFLICT, errorResponse]
+
+    if exploracion:
+        try:
+            result = cls.delete_one({"_id": exploracion_id})
+        except Exception as e:
+            errorResponse.error = f"Error al eliminar la exploración: {str(e)}"
+            return [rcodes.CONFLICT, errorResponse]
+
+        if result.deleted_count > 0:
+            response.detail = f"Exploración con ID {exploracion_id} eliminada correctamente"
+            return [rcodes.OK, response]
+        else:
+            errorResponse.error = "Error al eliminar la exploración"
+            return [rcodes.CONFLICT, errorResponse]
+    else:
+        errorResponse.error = "Exploración no encontrada"
+        return [rcodes.NOT_FOUND, errorResponse]
+
+
+def update_exploration(exploracion_id: str, updated_data: dict):
+    response = CreatedObjectResponse(detail=None, id=None, ok=True)
+    errorResponse = errors.Error(error="", detail=None)
+
+    if not valid_exploration_id(exploracion_id):
+        errorResponse.error = "ID de exploración no válido"
+        return [rcodes.BAD_REQUEST, errorResponse]
+    
+
+    exploracion_id = serialice_id(exploracion_id)
+
+    cls = Collections().get_collection(cf.EXPLORATION_COLLECTION)
+    
+    try:
+        exploracion = cls.find_one({"_id": exploracion_id})
+    except KeyError:
+        errorResponse.error = "Error al acceder a la colección de exploraciones"
+        return [rcodes.CONFLICT, errorResponse]
+
+    if exploracion:
+        try:
+            result = cls.update_one({"_id": exploracion_id}, {"$set": updated_data})
+        except Exception as e:
+            errorResponse.error = f"Error al modificar la exploración: {str(e)}"
+            return [rcodes.CONFLICT, errorResponse]
+
+        if result.modified_count > 0:
+            response.detail = f"Exploración con ID {exploracion_id} modificada correctamente"
+            response.id = str(exploracion_id)
+            return [rcodes.OK, response]
+        else:
+            errorResponse.error = "La exploración no fue modificada"
+            return [rcodes.NOT_MODIFIED, errorResponse]
+    else:
+        errorResponse.error = "Exploración no encontrada"
+        return [rcodes.NOT_FOUND, errorResponse]
