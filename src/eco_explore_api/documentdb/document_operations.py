@@ -12,8 +12,6 @@ import eco_explore_api.constants.response_constants as rcodes
 from eco_explore_api.schemas.responses import (
     BestRoutesResponse,
     UserRoutesResponse,
-    ExplorationScheduleResponse,
-    ResenaResponse,
     ExploracionesResponse,
     CreatedObjectResponse,
     StatusResponse,
@@ -38,8 +36,13 @@ def transform_id_object(obj: dict):
     for element in obj:
         curr = obj[element]
         if isinstance(curr, list):
-            curr = [str(x) for x in curr if bson.ObjectId.is_valid(x)]
-            obj[element] = curr
+            sub_curr = []
+            for c in curr:
+                if bson.ObjectId.is_valid(c):
+                    sub_curr.append(str(c))
+                else:
+                    sub_curr.append(c)
+            obj[element] = sub_curr
         elif bson.ObjectId.is_valid(curr):
             obj[element] = str(curr)
     return obj
@@ -72,7 +75,9 @@ def get_logbook(id: str):
     cls = Collections().get_collection(cf.LOGBOOK_COLLECTION)
     ans = cls.find_one(filter=search)
     if ans:
+        print(ans)
         ans = transform_id_object(dict(ans))
+        print(ans)
         try:
             models.BitacoraModel.model_validate(ans)
         except Exception as e:
@@ -96,7 +101,7 @@ def find_best_routes(acivity: str):
             ),
         ]
     cls = Collections().get_collection(cf.LOGBOOK_COLLECTION)
-    search_criteria = {"Actividad": acivity}
+    search_criteria = {"Actividad": acivity, "Publica": True}
     ans = list(cls.find(filter=search_criteria).sort("Puntuacion", DESCENDING).limit(7))
     if len(ans):
         for bitacora in ans:
@@ -359,41 +364,59 @@ def update_user(user_id: str, updated_user: schemas.Usuarios):
         return False
 
 
-def add_review_to_bitacora(bitacora_id: str, user_id: str, resena: schemas.Reseña):
-    cls = Collections().get_collection(cf.LOGBOOK_COLLECTION)
-    col = Collections().get_collection(cf.COMENTARY_COLLECTION)
+def add_review_to_bitacora(bitacora_id: str, user_id: str, object: dict):
+    errorResponse = errors.Error(error="", detail=None)
+    try:
+        schemas.Reseña.model_validate(object)
+    except Exception as e:
+        errorResponse.error = "Objeto Invalido"
+        errorResponse.detail = str(e)
+        return [rcodes.BAD_REQUEST, errorResponse]
 
-    bitacora_id = serialice_id(bitacora_id)
+    resena = schemas.Reseña(**object)
 
-    user_id = serialice_id(user_id)
+    try:
+        cls = Collections().get_collection(cf.LOGBOOK_COLLECTION)
+        col = Collections().get_collection(cf.COMENTARY_COLLECTION)
 
-    if user_exist(user_id):
-        try:
-            resena_id = col.insert_one(resena.model_dump()).inserted_id
+        bitacora_id = serialice_id(bitacora_id)
 
-            cls.update_one({"_id": bitacora_id}, {"$push": {"Comentarios": resena_id}})
+        user_id = serialice_id(user_id)
 
-            bitacora = cls.find_one({"_id": bitacora_id})
-            comentarios_ids = bitacora.get("Comentarios", [])
+        if user_exist(user_id):
+            try:
+                resena_id = col.insert_one(resena.model_dump()).inserted_id
 
-            puntuaciones = []
-            for comentario_id in comentarios_ids:
-                comentario = col.find_one({"_id": comentario_id})
-                puntuaciones.append(comentario.get("Evaluacion", 0))
+                cls.update_one(
+                    {"_id": bitacora_id}, {"$push": {"Comentarios": resena_id}}
+                )
 
-            if puntuaciones:
-                promedio = round(sum(puntuaciones) / len(puntuaciones), 1)
+                bitacora = cls.find_one({"_id": bitacora_id})
+                comentarios_ids = bitacora.get("Comentarios", [])
 
-                cls.update_one({"_id": bitacora_id}, {"$set": {"Puntuacion": promedio}})
+                puntuaciones = []
+                for comentario_id in comentarios_ids:
+                    comentario = col.find_one({"_id": comentario_id})
+                    puntuaciones.append(comentario.get("Evaluacion", 0))
 
-            respuesta = ResenaResponse(
-                Evaluacion=resena.Evaluacion, Comentario=resena.Comentario
-            )
-            return rcodes.OK, respuesta
-        except Exception as e:
-            print(f"Error al agregar reseña a la bitácora: {e}")
-            errorResponse = errors.Error(error="Error al agregar reseña", detail=str(e))
-            return rcodes.INTERNAL_SERVER_ERROR, errorResponse
-    else:
-        errorResponse = errors.Error(error="El usuario no existe", detail=None)
-        return rcodes.NOT_FOUND, errorResponse
+                if puntuaciones:
+                    promedio = round(sum(puntuaciones) / len(puntuaciones), 1)
+
+                    cls.update_one(
+                        {"_id": bitacora_id}, {"$set": {"Puntuacion": promedio}}
+                    )
+
+                respuesta = StatusResponse(ok=True, detail="Rereña agregada")
+                return [rcodes.CREATED, respuesta]
+            except Exception as e:
+                errorResponse = errors.Error(
+                    error="Error al agregar reseña", detail=str(e)
+                )
+                return [rcodes.CONFLICT, errorResponse]
+        else:
+            errorResponse = errors.Error(error="El usuario no existe", detail=None)
+            return [rcodes.NOT_FOUND, errorResponse]
+    except Exception as e:
+        errorResponse.error = "Ocurrio un error interno"
+        errorResponse.detail = str(e)
+        return [rcodes.CONFLICT, errorResponse]
