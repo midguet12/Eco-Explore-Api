@@ -73,10 +73,14 @@ async def statue(token: dict = Depends(auth_operations.oauth2_scheme)):
     )
 
 
-@app.get("/usuarios", response_model=List[UsuariosResponse], tags=["Usuarios"])
-async def get_usuarios():
-    usuarios = []
-    return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(usuarios))
+@app.get("/usuarios", response_model=models.UsuariosModel, tags=["Usuarios"])
+async def get_usuarios(token: dict = Depends(auth_operations.oauth2_scheme)):
+    usuario = await auth_operations.get_current_user(token)
+    # print(usuario.model_dump())
+    return JSONResponse(
+        status_code=rcodes.OK,
+        content=jsonable_encoder(usuario.model_dump()),
+    )
 
 
 @app.put(
