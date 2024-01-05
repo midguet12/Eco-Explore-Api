@@ -91,6 +91,44 @@ def get_logbook(id: str):
         return [rcodes.NOT_FOUND, errorResponse]
 
 
+async def update_profile_photo(user_id: str, file: UploadFile):
+    errorResponse = errors.Error(error="", detail=None)
+    if not valid_user_id(user_id):
+        errorResponse.error = "El id de perfil es invalido"
+        return [rcodes.BAD_REQUEST, errorResponse]
+    if user_exist(serialice_id(user_id)):
+        try:
+            storage = gstorage()
+            file.filename = user_id
+            imgResponse = await storage.upload_single_file(file)
+            imgResponse = GoogleStorageResponse(**imgResponse)
+            imgResponse.file_path = (
+                "https://storage.googleapis.com/" + imgResponse.file_path
+            )
+            cls = Collections().get_collection(cf.USERS_COLLECTION)
+            search = {"_id": serialice_id(user_id)}
+            update_rule = {"$set": {"UrlImagen": imgResponse.file_path}}
+            ans = cls.update_one(filter=search, update=update_rule, upsert=False)
+            if ans:
+                result = StatusResponse(
+                    ok=True,
+                    detail="Imagen Actualizada {}".format(imgResponse.file_path),
+                )
+                return [rcodes.ACEPTED, result]
+            else:
+                error = errors.Error(
+                    error="No se pudo actualizar la imagen", detail=None
+                )
+                return [rcodes.UNPROCESABLE, error]
+        except Exception as e:
+            errorResponse.error = "Error al actualizar la foto"
+            errorResponse.detail = str(e)
+            return [rcodes.CONFLICT, errorResponse]
+    else:
+        errorResponse.error = "El usuario no existe"
+        return [rcodes.NOT_FOUND, errorResponse]
+
+
 def find_best_routes(acivity: str):
     acivity = acivity.strip("").lower().capitalize()
     response = BestRoutesResponse(Rutas=[])
