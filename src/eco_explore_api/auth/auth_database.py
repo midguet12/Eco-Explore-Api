@@ -11,10 +11,10 @@ def get_user(email: str):
         ans = cls.find_one(filter=search)
         if ans:
             ans = transform_id_object(ans)
-            print(ans)
+            # print(ans)
             return schemas.UsuariosModelAuth(**transform_id_object(ans))
         else:
             return None
     except Exception as e:
-        print(str(e))
+        # print(str(e))
         return None

@@ -58,7 +58,7 @@ class UsuariosModelAuth(Usuarios):
 
 
 class Exploraciones(BaseModel):
-    FechaAgendada: datetime
+    FechaAgendada: int
     Guia: str
     Exploradores: List[str]
     Ruta: str

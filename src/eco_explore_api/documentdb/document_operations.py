@@ -1,5 +1,6 @@
 import re
 import bson
+from datetime import datetime
 from fastapi import UploadFile
 from pydantic import EmailStr
 import bson.json_util as json_util
@@ -34,6 +35,7 @@ def valid_user_id(user_id: str):
     except Exception:
         return False
 
+
 def valid_exploration_id(exploration_id: str):
     try:
         exploration_id = serialice_id(exploration_id)
@@ -66,6 +68,7 @@ def user_exist(user_id: bson.ObjectId):
     ans = cls.find_one(filter=usr_serach)
     return bool(ans)
 
+
 def exploration_exist(exploration_id: bson.ObjectId):
     if isinstance(exploration_id, str):
         exploration_id = serialice_id(exploration_id)
@@ -93,9 +96,9 @@ def get_logbook(id: str):
     cls = Collections().get_collection(cf.LOGBOOK_COLLECTION)
     ans = cls.find_one(filter=search)
     if ans:
-        print(ans)
+        # print(ans)
         ans = transform_id_object(dict(ans))
-        print(ans)
+        # print(ans)
         try:
             models.BitacoraModel.model_validate(ans)
         except Exception as e:
@@ -178,7 +181,8 @@ def find_best_routes(acivity: str):
 def find_users_by_email(email: str):
     response = UsersResponse(Usuarios=[])
     cls = Collections().get_collection(cf.USERS_COLLECTION)
-    search_criteria = {"Email": email}
+    regex = re.compile(r"(?i){}".format(email), re.UNICODE)
+    search_criteria = {"Email": {"$regex": regex}}
     ans = list(cls.find(filter=search_criteria))
     if len(ans):
         for usuario in ans:
@@ -254,7 +258,9 @@ def exploration_schedule(user_id: str):
     if user_exist(user_id):
         try:
             cls = Collections().get_collection(cf.EXPLORATION_COLLECTION)
-            search_filter = {"Guia": user_id, "Exploradores": {"$in": [user_id]}}
+            search_filter = {
+                "$or": [{"Guia": user_id}, {"Exploradores": {"$in": [user_id]}}]
+            }
             ans = list(cls.find(filter=search_filter))
             for element in ans:
                 try:
@@ -335,7 +341,7 @@ def create_logbook(user_id: str, object: dict):
 
 
 def modify_logbook(bitacora_id: str, object: dict):
-    print(bitacora_id)
+    # print(bitacora_id)
     response = StatusResponse(ok=True, detail="Bitácora modificada exitosamente")
     errorResponse = errors.Error(error="", detail=None)
 
@@ -370,7 +376,7 @@ def modify_logbook(bitacora_id: str, object: dict):
 
     try:
         cls = Collections().get_collection(cf.LOGBOOK_COLLECTION)
-        print(element.model_dump())
+        # print(element.model_dump())
         ans = cls.update_one({"_id": bitacora_id}, {"$set": element.model_dump()})
         # updated_data = {"$set": element.model_dump()}
         # ans = cls.update_one({"_id": bitacora_id}, updated_data)
@@ -631,7 +637,6 @@ def add_review_to_bitacora(bitacora_id: str, user_id: str, object: dict):
         return [rcodes.CONFLICT, errorResponse]
 
 
-
 def create_exploration(user_id: str, id_bitacora: str, object: dict):
     response = CreatedObjectResponse(detail=None, id=None, ok=True)
     errorResponse = errors.Error(error="", detail=None)
@@ -646,7 +651,7 @@ def create_exploration(user_id: str, id_bitacora: str, object: dict):
         return [rcodes.BAD_REQUEST, errorResponse]
 
     user_id = serialice_id(user_id)
-    
+
     if not user_exist(user_id):
         errorResponse.error = "El usuario no existe"
         return [rcodes.NOT_FOUND, errorResponse]
@@ -662,8 +667,11 @@ def create_exploration(user_id: str, id_bitacora: str, object: dict):
 
     try:
         cls = Collections().get_collection(cf.EXPLORATION_COLLECTION)
-
-        ans = cls.insert_one(element.model_dump())
+        element = element.model_dump()
+        element["Exploradores"] = [serialice_id(x) for x in element["Exploradores"]]
+        element["Guia"] = serialice_id(element["Guia"])
+        element["Ruta"] = serialice_id(element["Ruta"])
+        ans = cls.insert_one(element)
 
         if ans and ans.inserted_id:
             response.detail = "Exploración creada"
@@ -682,11 +690,10 @@ def delete_exploration(exploracion_id: str):
     response = CreatedObjectResponse(detail=None, id=None, ok=True)
     errorResponse = errors.Error(error="", detail=None)
 
-    
     if not valid_exploration_id(exploracion_id):
         errorResponse.error = "ID de exploración no válido"
         return [rcodes.BAD_REQUEST, errorResponse]
-    
+
     exploracion_id = serialice_id(exploracion_id)
 
     if not exploration_exist(exploracion_id):
@@ -708,7 +715,9 @@ def delete_exploration(exploracion_id: str):
             return [rcodes.CONFLICT, errorResponse]
 
         if result.deleted_count > 0:
-            response.detail = f"Exploración con ID {exploracion_id} eliminada correctamente"
+            response.detail = (
+                f"Exploración con ID {exploracion_id} eliminada correctamente"
+            )
             return [rcodes.OK, response]
         else:
             errorResponse.error = "Error al eliminar la exploración"
@@ -725,12 +734,11 @@ def update_exploration(exploracion_id: str, updated_data: dict):
     if not valid_exploration_id(exploracion_id):
         errorResponse.error = "ID de exploración no válido"
         return [rcodes.BAD_REQUEST, errorResponse]
-    
 
     exploracion_id = serialice_id(exploracion_id)
 
     cls = Collections().get_collection(cf.EXPLORATION_COLLECTION)
-    
+
     try:
         exploracion = cls.find_one({"_id": exploracion_id})
     except KeyError:
@@ -745,7 +753,9 @@ def update_exploration(exploracion_id: str, updated_data: dict):
             return [rcodes.CONFLICT, errorResponse]
 
         if result.modified_count > 0:
-            response.detail = f"Exploración con ID {exploracion_id} modificada correctamente"
+            response.detail = (
+                f"Exploración con ID {exploracion_id} modificada correctamente"
+            )
             response.id = str(exploracion_id)
             return [rcodes.OK, response]
         else:
