@@ -345,7 +345,7 @@ async def get_best_rotes(activity: str):
 
 
 @app.get(
-    "/usuarios/search/{email}",
+    "/usuarios/buscar/{email}",
     response_model=UsersResponse,
     tags=["Usuarios"],
 )
@@ -360,7 +360,7 @@ async def search_users_by_email(email: str):
 
 
 @app.post(
-    "/signin",
+    "/usuarios/crear",
     response_model=StatusResponse,
     tags=["Usuarios"],
 )
@@ -371,7 +371,8 @@ async def sign_in(json_data: dict):
         if dc.create_user(contenido):
             respuesta = StatusResponse(ok=True, detail="usuario Creado")
             return JSONResponse(
-                status_code=rcodes.OK, content=jsonable_encoder(respuesta.model_dump())
+                status_code=rcodes.CREATED,
+                content=jsonable_encoder(respuesta.model_dump()),
             )
         else:
             res = StatusResponse(ok=False, detail="El usuario ya existe")

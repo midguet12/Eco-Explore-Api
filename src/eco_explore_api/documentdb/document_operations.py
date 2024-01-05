@@ -22,6 +22,10 @@ from eco_explore_api.schemas.responses import (
     UsersResponse,
 )
 from eco_explore_api.storage.google_storage import gstorage
+from passlib.context import CryptContext
+
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def serialice_id(uid: str):
@@ -82,7 +86,10 @@ def create_user(Usuario: schemas.Usuarios):
     cls = Collections().get_collection(cf.USERS_COLLECTION)
     ans = cls.find_one({"Email": Usuario.Email})
     if not ans:
-        ans = cls.insert_one(Usuario.model_dump())
+        save = Usuario.Clave
+        Usuario = Usuario.model_dump()
+        Usuario['Clave'] = pwd_context.hash(save) 
+        ans = cls.insert_one(Usuario)
         return ans.acknowledged
     return False
 
