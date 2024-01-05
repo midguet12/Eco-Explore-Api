@@ -17,6 +17,7 @@ from eco_explore_api.schemas.responses import (
     UserRoutesResponse,
     CreatedObjectResponse,
     ComentaryResponse,
+    ExplorationUserResponse,
 )
 from eco_explore_api.schemas import errors, models
 import eco_explore_api.config as cf
@@ -52,28 +53,16 @@ async def get_usuarios():
     return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(usuarios))
 
 
-@app.put("/usuarios/{user_id}", response_model=StatusResponse, tags=["Usuarios"])
+@app.put(
+    "/usuarios/{user_id}/actualizar/perfil",
+    response_model=StatusResponse,
+    tags=["Usuarios"],
+)
 async def update_user(user_id: str, json_data: dict):
-    try:
-        contenido = sh.Usuarios(**json_data)
-        if dc.update_user(user_id, contenido):
-            respuesta = StatusResponse(
-                ok=True, detail="Datos de usuario actualizados correctamente"
-            )
-            return JSONResponse(
-                status_code=rcodes.OK, content=jsonable_encoder(respuesta.model_dump())
-            )
-        else:
-            res = StatusResponse(ok=False, detail="No se pudo actualizar el usuario")
-            return JSONResponse(
-                status_code=rcodes.NOT_FOUND,  # Podrías cambiar el código de estado según tu necesidad
-                content=jsonable_encoder(res.model_dump()),
-            )
-    except ValidationError as exc:
-        error = errors.Error(error=str(exc.errors()[0]), detail=None)
-        return JSONResponse(
-            status_code=rcodes.BAD_REQUEST, content=jsonable_encoder(error.model_dump())
-        )
+    code, response = dc.update_user(user_id, json_data)
+    return JSONResponse(
+        status_code=code, content=jsonable_encoder(response.model_dump())
+    )
 
 
 @app.get(
@@ -83,6 +72,18 @@ async def update_user(user_id: str, json_data: dict):
 )
 async def get_pertenencia(user_id: str, bitacora_id: str):
     code, response = dc.its_user_logbook(user_id, bitacora_id)
+    return JSONResponse(
+        status_code=code, content=jsonable_encoder(response.model_dump())
+    )
+
+
+@app.post(
+    "/usuarios/{user_id}/actualizar/foto",
+    response_model=StatusResponse,
+    tags=["Usuarios"],
+)
+async def update_profile_photo(user_id: str, file: UploadFile):
+    code, response = await dc.update_profile_photo(user_id, file)
     return JSONResponse(
         status_code=code, content=jsonable_encoder(response.model_dump())
     )
@@ -291,6 +292,7 @@ async def create_file(
         "fileb_content_type": fileb.content_type,
     }
 
+
 @app.post("/exploraciones/crear/{user_id}",
            response_model=CreatedObjectResponse, 
            tags=["Exploraciones"])
@@ -312,3 +314,16 @@ async def delete_exploration(exploration_id:str):
 async def Update_exploration(exploration_id:str, object: dict):
     code,response = dc.update_exploration(exploration_id,object) 
     return JSONResponse(status_code=code, content=jsonable_encoder(response.model_dump()))
+
+
+@app.get(
+    "/rutas/obtener",
+    response_model=BestRoutesResponse,
+    tags=["Rutas"],
+)
+async def get_route(search: str):
+    code, route_objects = dc.get_routes(search)
+    return JSONResponse(
+        status_code=code, content=jsonable_encoder(route_objects.model_dump())
+    )
+

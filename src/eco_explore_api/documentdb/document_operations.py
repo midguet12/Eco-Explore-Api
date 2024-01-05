@@ -1,3 +1,4 @@
+import re
 import bson
 from fastapi import UploadFile
 import bson.json_util as json_util
@@ -105,6 +106,44 @@ def get_logbook(id: str):
         return [rcodes.NOT_FOUND, errorResponse]
 
 
+async def update_profile_photo(user_id: str, file: UploadFile):
+    errorResponse = errors.Error(error="", detail=None)
+    if not valid_user_id(user_id):
+        errorResponse.error = "El id de perfil es invalido"
+        return [rcodes.BAD_REQUEST, errorResponse]
+    if user_exist(serialice_id(user_id)):
+        try:
+            storage = gstorage()
+            file.filename = user_id
+            imgResponse = await storage.upload_single_file(file)
+            imgResponse = GoogleStorageResponse(**imgResponse)
+            imgResponse.file_path = (
+                "https://storage.googleapis.com/" + imgResponse.file_path
+            )
+            cls = Collections().get_collection(cf.USERS_COLLECTION)
+            search = {"_id": serialice_id(user_id)}
+            update_rule = {"$set": {"UrlImagen": imgResponse.file_path}}
+            ans = cls.update_one(filter=search, update=update_rule, upsert=False)
+            if ans:
+                result = StatusResponse(
+                    ok=True,
+                    detail="Imagen Actualizada {}".format(imgResponse.file_path),
+                )
+                return [rcodes.ACEPTED, result]
+            else:
+                error = errors.Error(
+                    error="No se pudo actualizar la imagen", detail=None
+                )
+                return [rcodes.UNPROCESABLE, error]
+        except Exception as e:
+            errorResponse.error = "Error al actualizar la foto"
+            errorResponse.detail = str(e)
+            return [rcodes.CONFLICT, errorResponse]
+    else:
+        errorResponse.error = "El usuario no existe"
+        return [rcodes.NOT_FOUND, errorResponse]
+
+
 def find_best_routes(acivity: str):
     acivity = acivity.strip("").lower().capitalize()
     response = BestRoutesResponse(Rutas=[])
@@ -136,7 +175,9 @@ def find_best_routes(acivity: str):
 
 def exploration_details(user_id: str):
     response = UserRoutesResponse(
-        Guadadas=BestRoutesResponse(Rutas=[]), Publicas=BestRoutesResponse(Rutas=[])
+        Guadadas=BestRoutesResponse(Rutas=[]),
+        Publicas=BestRoutesResponse(Rutas=[]),
+        Agendadas=ExploracionesResponse(Agenda=[]),
     )
     errorResponse = errors.Error(error="", detail=None)
     if not valid_user_id(user_id):
@@ -149,26 +190,32 @@ def exploration_details(user_id: str):
     ans = cls.find_one(filter=usr_serach)
     if ans:
         bitacoras = []
-        cls = Collections().get_collection(cf.LOGBOOK_COLLECTION)
-        for elements in ans["Bitacoras"]:
-            bit = cls.find_one(filter={"_id": elements})
-            if bit:
-                for id in bit["Comentarios"]:
-                    id = str(id)
-                try:
-                    bitacoras.append(models.BitacoraModel(**transform_id_object(bit)))
-                except Exception as e:
-                    errorResponse.error = "Error al recuperar las bitacoras"
-                    errorResponse.detail = str(e)
-                    return [rcodes.CONFLICT, errorResponse]
+        try:
+            cls = Collections().get_collection(cf.LOGBOOK_COLLECTION)
+            for elements in ans["Bitacoras"]:
+                bit = cls.find_one(filter={"_id": elements})
+                if bit:
+                    for id in bit["Comentarios"]:
+                        id = str(id)
+                    try:
+                        bitacoras.append(
+                            models.BitacoraModel(**transform_id_object(bit))
+                        )
+                    except Exception as e:
+                        errorResponse.error = "Error al recuperar las bitacoras"
+                        errorResponse.detail = str(e)
+                        return [rcodes.CONFLICT, errorResponse]
 
-        for element in bitacoras:
-            if element.Publica:
-                response.Publicas.Rutas.append(element)
-            else:
-                response.Guadadas.Rutas.append(element)
-
-        return [rcodes.OK, response]
+            for element in bitacoras:
+                if element.Publica:
+                    response.Publicas.Rutas.append(element)
+                else:
+                    response.Guadadas.Rutas.append(element)
+            return [rcodes.OK, response]
+        except Exception as e:
+            errorResponse.error = "Ocurrio un error al recuperar las exploraciones"
+            errorResponse.detail = str(e)
+            return [rcodes.CONFLICT, errorResponse]
     else:
         errorResponse.error = "El usuario no existe"
         return [rcodes.NOT_FOUND, errorResponse]
@@ -182,18 +229,23 @@ def exploration_schedule(user_id: str):
         return [rcodes.BAD_REQUEST, errorResponse]
     user_id = serialice_id(user_id)
     if user_exist(user_id):
-        cls = Collections().get_collection(cf.EXPLORATION_COLLECTION)
-        search_filter = {"Guia": user_id, "Exploradores": [user_id]}
-        ans = list(cls.find(filter=search_filter))
-        for element in ans:
-            try:
-                schedule = models.ExploracionesModel(**transform_id_object(element))
-                response.Agenda.append(schedule)
-            except Exception as e:
-                errorResponse.error = "Recuperar Exploraciones"
-                errorResponse.detail = str(e)
-                return [rcodes.CONFLICT, errorResponse]
-        return [rcodes.OK, response]
+        try:
+            cls = Collections().get_collection(cf.EXPLORATION_COLLECTION)
+            search_filter = {"Guia": user_id, "Exploradores": {"$in": [user_id]}}
+            ans = list(cls.find(filter=search_filter))
+            for element in ans:
+                try:
+                    schedule = models.ExploracionesModel(**transform_id_object(element))
+                    response.Agenda.append(schedule)
+                except Exception as e:
+                    errorResponse.error = "Recuperar Exploraciones"
+                    errorResponse.detail = str(e)
+                    return [rcodes.CONFLICT, errorResponse]
+            return [rcodes.OK, response]
+        except Exception as e:
+            errorResponse.error = "Ocurrio un error al recuperar las exploraciones"
+            errorResponse.detail = str(e)
+            return [rcodes.CONFLICT, errorResponse]
     else:
         errorResponse.error = "El usuario no existe"
         return [rcodes.NOT_FOUND, errorResponse]
@@ -363,20 +415,85 @@ def grand_explorator_mode(user_id: str):
         return [rcodes.CONFLICT, errorResponse]
 
 
-def update_user(user_id: str, updated_user: schemas.Usuarios):
-    cls = Collections().get_collection(cf.USERS_COLLECTION)
+def get_routes(value: str):
+    try:
+        errorResponse = errors.Error(error="", detail=None)
+        cls = Collections().get_collection(cf.LOGBOOK_COLLECTION)
+        # query = {
+        #     "Nombre": {"$regex": f".*{route}.*"},
+        # }
+        regex = re.compile(r"(?i){}".format(value), re.UNICODE)
+        query = {
+            "$or": [
+                {"Nombre": {"$regex": regex}},
+                {"Actividad": {"$regex": regex}},
+            ],
+            "Publica": True,
+        }
+        routes = cls.find(filter=query)
 
-    user_id = serialice_id(user_id)
+        route_objects = BestRoutesResponse(Rutas=[])
+        for route in routes:
+            try:
+                route_objects.Rutas.append(
+                    models.BitacoraModel(**transform_id_object(route))
+                )
+            except Exception as e:
+                errorResponse.error = "Ocurrio un error al recuperar las bitacoras"
+                errorResponse.detail = str(e)
+                return [rcodes.CONFLICT, errorResponse]
+        if route_objects.Rutas:
+            return [rcodes.OK, route_objects]
+        else:
+            return [rcodes.NOT_FOUND, route_objects]
+    except Exception as e:
+        errorResponse.error = "Ocurrio un error"
+        errorResponse.detail = str(e)
+        return [rcodes.CONFLICT, errorResponse]
 
-    if user_exist(user_id):
-        try:
-            cls.update_one({"_id": user_id}, {"$set": updated_user.model_dump()})
-            return True
-        except Exception as e:
-            print(f"Error al actualizar usuario: {e}")
-            return False
-    else:
-        return False
+
+def update_user(user_id: str, updated_user: dict):
+    errorResponse = errors.Error(error="", detail=None)
+    try:
+        schemas.Usuarios.model_validate(updated_user)
+    except Exception as e:
+        errorResponse.error = "Objeto Invalido"
+        errorResponse.detail = str(e)
+        return [rcodes.BAD_REQUEST, errorResponse]
+
+    try:
+        cls = Collections().get_collection(cf.USERS_COLLECTION)
+
+        user_id = serialice_id(user_id)
+
+        if user_exist(user_id):
+            try:
+                updated_user = schemas.Usuarios(**updated_user)
+                updated_user.Bitacoras = [
+                    serialice_id(x) for x in updated_user.Bitacoras
+                ]
+                ans = cls.update_one(
+                    {"_id": user_id}, {"$set": updated_user.model_dump()}
+                )
+                if ans:
+                    return [
+                        rcodes.CREATED,
+                        StatusResponse(ok=True, detail="Informacion Actualizada"),
+                    ]
+                else:
+                    errorResponse.error = "No se modifico la informacion"
+                    return [rcodes.NOT_FOUND, errorResponse]
+            except Exception as e:
+                errorResponse.error = "Ocurrio un error al actualizar la informacion"
+                errorResponse.detail = str(e)
+                return [rcodes.CONFLICT, errorResponse]
+        else:
+            errorResponse.error = "El usuario no existe"
+            return [rcodes.NOT_FOUND, errorResponse]
+    except Exception as e:
+        errorResponse.error = "Objeto Invalido"
+        errorResponse.detail = str(e)
+        return [rcodes.BAD_REQUEST, errorResponse]
 
 
 def add_review_to_bitacora(bitacora_id: str, user_id: str, object: dict):
