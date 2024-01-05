@@ -86,10 +86,19 @@ async def get_usuarios():
 async def update_user(
     user_id: str, json_data: dict, token: dict = Depends(auth_operations.oauth2_scheme)
 ):
-    code, response = dc.update_user(user_id, json_data)
-    return JSONResponse(
-        status_code=code, content=jsonable_encoder(response.model_dump())
-    )
+    if await auth_operations.check_if_user_is_auth(user_id, token):
+        code, response = dc.update_user(user_id, json_data)
+        return JSONResponse(
+            status_code=code, content=jsonable_encoder(response.model_dump())
+        )
+    else:
+        errorResponse = errors.Error(
+            error="No tienes permiso para realizar esta accion", detail=None
+        )
+        return JSONResponse(
+            status_code=rcodes.UNAUTHORIZED,
+            content=jsonable_encoder(errorResponse.model_dump()),
+        )
 
 
 @app.get(
@@ -97,11 +106,24 @@ async def update_user(
     response_model=StatusResponse,
     tags=["Usuarios"],
 )
-async def get_pertenencia(user_id: str, bitacora_id: str):
-    code, response = dc.its_user_logbook(user_id, bitacora_id)
-    return JSONResponse(
-        status_code=code, content=jsonable_encoder(response.model_dump())
-    )
+async def get_pertenencia(
+    user_id: str,
+    bitacora_id: str,
+    token: Annotated[str, Depends(auth_operations.oauth2_scheme)],
+):
+    if await auth_operations.check_if_user_is_auth(user_id, token):
+        code, response = dc.its_user_logbook(user_id, bitacora_id)
+        return JSONResponse(
+            status_code=code, content=jsonable_encoder(response.model_dump())
+        )
+    else:
+        errorResponse = errors.Error(
+            error="No tienes permiso para realizar esta accion", detail=None
+        )
+        return JSONResponse(
+            status_code=rcodes.UNAUTHORIZED,
+            content=jsonable_encoder(errorResponse.model_dump()),
+        )
 
 
 @app.post(
@@ -109,11 +131,24 @@ async def get_pertenencia(user_id: str, bitacora_id: str):
     response_model=StatusResponse,
     tags=["Usuarios"],
 )
-async def update_profile_photo(user_id: str, file: UploadFile):
-    code, response = await dc.update_profile_photo(user_id, file)
-    return JSONResponse(
-        status_code=code, content=jsonable_encoder(response.model_dump())
-    )
+async def update_profile_photo(
+    user_id: str,
+    file: UploadFile,
+    token: Annotated[str, Depends(auth_operations.oauth2_scheme)],
+):
+    if await auth_operations.check_if_user_is_auth(user_id, token):
+        code, response = await dc.update_profile_photo(user_id, file)
+        return JSONResponse(
+            status_code=code, content=jsonable_encoder(response.model_dump())
+        )
+    else:
+        errorResponse = errors.Error(
+            error="No tienes permiso para realizar esta accion", detail=None
+        )
+        return JSONResponse(
+            status_code=rcodes.UNAUTHORIZED,
+            content=jsonable_encoder(errorResponse.model_dump()),
+        )
 
 
 @app.put(
@@ -121,31 +156,43 @@ async def update_profile_photo(user_id: str, file: UploadFile):
     response_model=StatusResponse,
     tags=["Usuarios"],
 )
-async def make_guide(user_id: str):
-    code, repsonse = dc.grand_explorator_mode(user_id)
-    return JSONResponse(
-        status_code=code, content=jsonable_encoder(repsonse.model_dump())
-    )
+async def make_guide(
+    user_id: str,
+    token: Annotated[str, Depends(auth_operations.oauth2_scheme)],
+):
+    if await auth_operations.check_if_user_is_auth(user_id, token):
+        code, repsonse = dc.grand_explorator_mode(user_id)
+        return JSONResponse(
+            status_code=code, content=jsonable_encoder(repsonse.model_dump())
+        )
+    else:
+        errorResponse = errors.Error(
+            error="No tienes permiso para realizar esta accion", detail=None
+        )
+        return JSONResponse(
+            status_code=rcodes.UNAUTHORIZED,
+            content=jsonable_encoder(errorResponse.model_dump()),
+        )
 
 
-@app.get(
-    "/puntos/interes",
-    response_model=List[PuntosInteresResponse],
-    tags=["Puntos de Interés"],
-)
-async def get_puntos_interes():
-    puntos_interes = []
-    return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(puntos_interes))
+# @app.get(
+#     "/puntos/interes",
+#     response_model=List[PuntosInteresResponse],
+#     tags=["Puntos de Interés"],
+# )
+# async def get_puntos_interes():
+#     puntos_interes = []
+#     return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(puntos_interes))
 
 
-@app.get(
-    "/equipos/necesarios",
-    response_model=List[EquipoNecesarioResponse],
-    tags=["Equipos Necesarios"],
-)
-async def get_equipos_necesarios():
-    equipos = []
-    return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(equipos))
+# @app.get(
+#     "/equipos/necesarios",
+#     response_model=List[EquipoNecesarioResponse],
+#     tags=["Equipos Necesarios"],
+# )
+# async def get_equipos_necesarios():
+#     equipos = []
+#     return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(equipos))
 
 
 @app.get(
@@ -163,11 +210,24 @@ async def get_bitacoras(bitacora_id: str):
     response_model=CreatedObjectResponse,
     tags=["Bitácoras"],
 )
-async def create_bitacora(user_id: str, body: dict):
-    code, response = dc.create_logbook(user_id, body)
-    return JSONResponse(
-        status_code=code, content=jsonable_encoder(response.model_dump())
-    )
+async def create_bitacora(
+    user_id: str,
+    body: dict,
+    token: Annotated[str, Depends(auth_operations.oauth2_scheme)],
+):
+    if await auth_operations.check_if_user_is_auth(user_id, token):
+        code, response = dc.create_logbook(user_id, body)
+        return JSONResponse(
+            status_code=code, content=jsonable_encoder(response.model_dump())
+        )
+    else:
+        errorResponse = errors.Error(
+            error="No tienes permiso para realizar esta accion", detail=None
+        )
+        return JSONResponse(
+            status_code=rcodes.UNAUTHORIZED,
+            content=jsonable_encoder(errorResponse.model_dump()),
+        )
 
 
 @app.post(
@@ -192,6 +252,7 @@ async def add_pov(
     bitacora_id: str,
     coordinates: Annotated[str, Form()],
     file: Annotated[UploadFile, File()],
+    token: Annotated[str, Depends(auth_operations.oauth2_scheme)],
 ):
     try:
         coordinates = json.loads(coordinates)
@@ -203,12 +264,21 @@ async def add_pov(
             ),
         )
 
-    code, response = await dc.add_point_to_logbook(
-        user_id, bitacora_id, coordinates, file
-    )
-    return JSONResponse(
-        status_code=code, content=jsonable_encoder(response.model_dump())
-    )
+    if await auth_operations.check_if_user_is_auth(user_id, token):
+        code, response = await dc.add_point_to_logbook(
+            user_id, bitacora_id, coordinates, file
+        )
+        return JSONResponse(
+            status_code=code, content=jsonable_encoder(response.model_dump())
+        )
+    else:
+        errorResponse = errors.Error(
+            error="No tienes permiso para realizar esta accion", detail=None
+        )
+        return JSONResponse(
+            status_code=rcodes.UNAUTHORIZED,
+            content=jsonable_encoder(errorResponse.model_dump()),
+        )
 
 
 @app.get(
@@ -216,11 +286,23 @@ async def add_pov(
     response_model=ExploracionesResponse,
     tags=["Exploraciones"],
 )
-async def get_exploraciones(user_id: str):
-    code, response = dc.exploration_schedule(user_id)
-    return JSONResponse(
-        status_code=code, content=jsonable_encoder(response.model_dump())
-    )
+async def get_exploraciones(
+    user_id: str,
+    token: Annotated[str, Depends(auth_operations.oauth2_scheme)],
+):
+    if await auth_operations.check_if_user_is_auth(user_id, token):
+        code, response = dc.exploration_schedule(user_id)
+        return JSONResponse(
+            status_code=code, content=jsonable_encoder(response.model_dump())
+        )
+    else:
+        errorResponse = errors.Error(
+            error="No tienes permiso para realizar esta accion", detail=None
+        )
+        return JSONResponse(
+            status_code=rcodes.UNAUTHORIZED,
+            content=jsonable_encoder(errorResponse.model_dump()),
+        )
 
 
 @app.get(
@@ -285,21 +367,21 @@ async def exploration_details(
         )
 
 
-@app.post(
-    "/bitacoras/subir/{id}",
-    tags=["bitacoras"],
-)
-async def upload_to(id: str, file: UploadFile):
-    storage = gstorage()
-    try:
-        response = await storage.upload_single_file(file)
-        return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(response))
-    except Exception as e:
-        error = errors.Error(error="No fue posible subir el archivo", detail=str(e))
-        return JSONResponse(
-            status_code=rcodes.BAD_REQUEST,
-            content=jsonable_encoder(error.model_dump()),
-        )
+# @app.post(
+#     "/bitacoras/subir/{id}",
+#     tags=["bitacoras"],
+# )
+# async def upload_to(id: str, file: UploadFile):
+#     storage = gstorage()
+#     try:
+#         response = await storage.upload_single_file(file)
+#         return JSONResponse(status_code=rcodes.OK, content=jsonable_encoder(response))
+#     except Exception as e:
+#         error = errors.Error(error="No fue posible subir el archivo", detail=str(e))
+#         return JSONResponse(
+#             status_code=rcodes.BAD_REQUEST,
+#             content=jsonable_encoder(error.model_dump()),
+#         )
 
 
 @app.post(
@@ -307,11 +389,25 @@ async def upload_to(id: str, file: UploadFile):
     response_model=StatusResponse,
     tags=["Bitácoras"],
 )
-async def add_review_to_bitacora(bitacora_id: str, user_id: str, object: dict):
-    code, response = dc.add_review_to_bitacora(bitacora_id, user_id, object)
-    return JSONResponse(
-        status_code=code, content=jsonable_encoder(response.model_dump())
-    )
+async def add_review_to_bitacora(
+    bitacora_id: str,
+    user_id: str,
+    object: dict,
+    token: Annotated[str, Depends(auth_operations.oauth2_scheme)],
+):
+    if await auth_operations.check_if_user_is_auth(user_id, token):
+        code, response = dc.add_review_to_bitacora(bitacora_id, user_id, object)
+        return JSONResponse(
+            status_code=code, content=jsonable_encoder(response.model_dump())
+        )
+    else:
+        errorResponse = errors.Error(
+            error="No tienes permiso para realizar esta accion", detail=None
+        )
+        return JSONResponse(
+            status_code=rcodes.UNAUTHORIZED,
+            content=jsonable_encoder(errorResponse.model_dump()),
+        )
 
 
 @app.post("/files/{id1}/{id2}")
