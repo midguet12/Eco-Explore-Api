@@ -33,11 +33,6 @@ class PuntosInteresResponse(BaseModel):
     UrlMedia: Optional[List[str]]
 
 
-class ResenaResponse(BaseModel):
-    Evaluacion: int
-    Comentario: str
-
-
 class UsuariosResponse(BaseModel):
     Nombre: str
     ApellidoPaterno: str
@@ -47,15 +42,6 @@ class UsuariosResponse(BaseModel):
     PerfilPublico: bool
     Guia: bool
     Telefono: PhoneNumber
-
-
-class BitacoraResponse(BaseModel):
-    Nombre: str
-    Descripcion: str
-    Dificultad: int
-    EquipoNecesario: Optional[List[EquipoNecesarioResponse]]
-    PuntosInteres: List[PuntosInteresResponse]
-    Comentarios: Optional[List[ResenaResponse]]
 
 
 class ExploracionesResponse(BaseModel):
