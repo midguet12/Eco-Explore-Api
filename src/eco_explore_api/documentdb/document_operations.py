@@ -545,7 +545,7 @@ def get_routes(value: str):
 def update_user(user_id: str, updated_user: dict):
     errorResponse = errors.Error(error="", detail=None)
     try:
-        schemas.Usuarios.model_validate(updated_user)
+        schemas.ModUsuarios.model_validate(updated_user)
     except Exception as e:
         errorResponse.error = "Objeto Invalido"
         errorResponse.detail = str(e)
@@ -558,7 +558,7 @@ def update_user(user_id: str, updated_user: dict):
 
         if user_exist(user_id):
             try:
-                updated_user = schemas.Usuarios(**updated_user)
+                updated_user = schemas.ModUsuarios(**updated_user)
                 updated_user.Bitacoras = [
                     serialice_id(x) for x in updated_user.Bitacoras
                 ]
