@@ -88,7 +88,7 @@ def create_user(Usuario: schemas.Usuarios):
     if not ans:
         save = Usuario.Clave
         Usuario = Usuario.model_dump()
-        Usuario['Clave'] = pwd_context.hash(save) 
+        Usuario["Clave"] = pwd_context.hash(save)
         ans = cls.insert_one(Usuario)
         return ans.acknowledged
     return False
@@ -559,9 +559,7 @@ def update_user(user_id: str, updated_user: dict):
         if user_exist(user_id):
             try:
                 updated_user = schemas.ModUsuarios(**updated_user)
-                updated_user.Bitacoras = [
-                    serialice_id(x) for x in updated_user.Bitacoras
-                ]
+
                 ans = cls.update_one(
                     {"_id": user_id}, {"$set": updated_user.model_dump()}
                 )

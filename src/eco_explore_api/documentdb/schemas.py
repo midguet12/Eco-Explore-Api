@@ -52,13 +52,12 @@ class Usuarios(BaseModel):
     Telefono: PhoneNumber
     Bitacoras: Optional[List[str]]
 
+
 class ModUsuarios(BaseModel):
     Nombre: str
     ApellidoPaterno: str
     ApellidoMaterno: str
     Email: EmailStr
-    PerfilPublico: bool
-    Guia: bool
     Telefono: PhoneNumber
 
 
